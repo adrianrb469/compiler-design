@@ -2,12 +2,12 @@ from syntax_tree import *
 from render import create_direct_dfa_graph
 
 
-class DirectDFAState:
-    def __init__(self, state, marked=False, accepting=False, initial=False):
-        self.state = state
-        self.accepting = accepting
-        self.marked = marked
-        self.initial = initial
+# class DirectDFAState:
+#     def __init__(self, state, marked=False, accepting=False, initial=False):
+#         self.state = state
+#         self.accepting = accepting
+#         self.marked = marked
+#         self.initial = initial
 
 
 class DirectDFATransition:
@@ -17,19 +17,72 @@ class DirectDFATransition:
         self.destinationState = destinationState
 
 
+class DirectDFAState:
+    def __init__(self, state, marked=False, accepting=False, initial=False, accept_pos=None):
+        self.state = state
+        self.accepting = accepting
+        self.marked = marked
+        self.initial = initial
+        self.accept_pos = accept_pos  # Position of '#' if it exists in the state
+        self.action = None  # Action associated with the state
+        self.label = None  # Label associated with the state
+
+
 class DirectDFA:
     def __init__(self, tree):
         self.states, self.transitions, self.alphabet = self.directConstruction(tree)
+        self.initial_state = self.states[0]
         self.tree = tree
+        
+    
 
     def step(self, current_state, input_symbol):
+        print(current_state)
+        print(self.transitions)
         for transition in self.transitions:
+            
             if (
-                transition.originState == current_state
+                set(transition.originState) == set(current_state.state)
                 and transition.symbol == input_symbol
             ):
                 return transition.destinationState
-        return None  # return None if no valid transition exists
+        return None
+    
+    def run(self, string, minimized=False):
+        # Verify if the string has chars that are not in the alphabet
+        # for char in string:
+        #     if char not in self.alphabet:
+        #         if not minimized:
+        #             print(f"Direct DFA simulation: {False}")
+        #         else:
+        #             print(f"Minimized Direct DFA simulation: {False}")
+        #         return False
+        if string[-1] != "#":
+            string += "#"
+
+        currentState = self.states[0]
+        for char in string:
+            transitionFound = False
+            for transition in self.transitions:
+                # print(currentState.state,transition.originState,transition.symbol,'-',char,transition.destinationState)
+                if (
+                    set(transition.originState) == set(currentState.state)
+                    and transition.symbol == char
+                    and char != "#"
+                ):
+                    for state in self.states:
+                        if state.state == transition.destinationState:
+                            currentState = state
+                            transitionFound = True
+                            print('\tEureka!', char, currentState.state)
+                            break
+                    break
+            if not transitionFound and char != "#":
+                if not minimized:
+                    print(f"Direct DFA simulation: {False}")
+                else:
+                    print(f"Minimized Direct DFA simulation: {False}")
+                return False  
 
     def directConstruction(self, tree):
         # regex = "(" + regex + ")#"
@@ -53,9 +106,6 @@ class DirectDFA:
             if nodeSet == set():
                 nodeSet = {"Ø"}
             nodeValueAndFollowpos.append([k, v.value, nodeSet])
-
-        # for node in nodeValueAndFollowpos: # for every node in nodeValueAndFollowpos
-        #     print(f'Node: {node[0]}, Value: {node[1]}, Followpos: {node[2]}')
 
         statesCounter = 0
         currentState = Dstates[
@@ -93,13 +143,17 @@ class DirectDFA:
                         newState in currentStates
                     ):  # if the new state is not in the list of current states
                         acceptingState = False
+                        accept_pos = None  # Initialize accept_pos
+
                         for endNode in newState:
                             if isinstance(endNode, int):
                                 if nodeValueAndFollowpos[endNode - 1][2] == {"Ø"}:
                                     acceptingState = True
+                                    accept_pos = endNode  # Record the position of '#'
                                     break
+
                         Dstates.append(
-                            DirectDFAState(newState, False, acceptingState)
+                            DirectDFAState(newState, False, acceptingState, accept_pos=accept_pos)
                         )  # add the new state to Dstates
                     if currentState.state != {"Ø"}:  # if the current state is not empty
                         Dtransitions.append(
@@ -110,62 +164,28 @@ class DirectDFA:
                 currentState = Dstates[statesCounter]
 
         return Dstates, Dtransitions, language
+    
+    def set_actions(self, rule_tokens):
+        # Extract the acceptance positions from the lexer AFD states
+        acceptance_positions = [state.accept_pos for state in  self.states if state.accept_pos is not None]
 
+        # Sort the acceptance positions in ascending order
+        # the reason we sort them is because, the acceptance positions are the positions of '#' in the state
+        # and the '#' is the last symbol in the regex
+        # which means the acceptance positions are the last positions in the regex
+        sorted_acceptance_positions = sorted(list(set(acceptance_positions)))
+
+        
+        # Associate the rule actions with the acceptance positions
+        for i, state in enumerate(self.states):
+            if state.accept_pos is not None:
+                token,action = rule_tokens[sorted_acceptance_positions.index(state.accept_pos)]
+                state.action = action
+                state.label = token
+  
     def render(self, minimized=False):
         create_direct_dfa_graph(self.states, self.transitions, minimized)
-
-    def run(self, string, minimized=False):
-        # Verify if the string has chars that are not in the alphabet
-        for char in string:
-            if char not in self.alphabet:
-                if not minimized:
-                    print(f"Direct DFA simulation: {False}")
-                else:
-                    print(f"Minimized Direct DFA simulation: {False}")
-                return False
-        if string[-1] != "#":
-            string += "#"
-
-        currentState = self.states[0]
-        for char in string:
-            transitionFound = False
-            for transition in self.transitions:
-                # print(currentState.state,transition.originState,transition.symbol,'-',char,transition.destinationState)
-                if (
-                    set(transition.originState) == set(currentState.state)
-                    and transition.symbol == char
-                    and char != "#"
-                ):
-                    for state in self.states:
-                        if state.state == transition.destinationState:
-                            currentState = state
-                            transitionFound = True
-                            # print('\tEureka!', char, currentState.state)
-                            break
-                    break
-            if not transitionFound and char != "#":
-                if not minimized:
-                    print(f"Direct DFA simulation: {False}")
-                else:
-                    print(f"Minimized Direct DFA simulation: {False}")
-                return False
-        # for transition in self.transitions:
-        #     print(transition.symbol, transition.originState, transition.destinationState)
-        # for state in self.states:
-        #     print(state.state, state.accepting)
-        if currentState.accepting:
-            if not minimized:
-                print(f"Direct DFA simulation: {True}")
-            else:
-                print(f"Minimized Direct DFA simulation: {True}")
-            return True
-        else:
-            if not minimized:
-                print(f"Direct DFA simulation: {False}")
-            else:
-                print(f"Minimized Direct DFA simulation: {False}")
-            return False
-
+        
     def minimize(self):
         # Step 1: Initialize partitions
         accepting_states = set()

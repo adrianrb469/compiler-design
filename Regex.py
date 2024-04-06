@@ -11,233 +11,261 @@ class Regex:
         self.formatted_regex = self.format()
 
     def tokenize(self, regex):
+        reserved = ['|','*','.','(',')','+','?',"'",'"']
         tokens = []
         i = 0
         while i < len(regex):
             char = regex[i]
 
-            if char == "\\":
+            if char == '\\':
                 if i + 1 < len(regex):
-                    if regex[i + 1] == "s":
-                        tokens.append(" ")
+                    if regex[i+1]=='s':
+                        tokens.append(' ')
+                    elif regex[i+1]=='t':
+                        tokens.append('\t')
+                    elif regex[i+1]=='n':
+                        tokens.append('\n')
                     else:
-                        tokens.append(regex[i : i + 2])
+                        tokens.append(regex[i+1] if regex[i+1] not in reserved else regex[i:i+2])
                     i += 2
                 else:
                     tokens.append(char)
                     i += 1
-
-            elif char == "[":
+            
+            elif char=="'":
+                if i + 2 < len(regex) and regex[i+2]=="'":
+                    res = regex[i+1] if regex[i+1] not in reserved else '\\'+regex[i+1]
+                    tokens.append(res)
+                    i += 3 if i+3<len(regex) else len(regex)
+                else:
+                    tokens.append(char)
+                    i += 1
+                  
+            elif char == '"':
+                _str = char
+                i += 1
+                
+                first_i=i
+                first_char = char
+                
+                while i < len(regex) and regex[i] != '"':
+                    if regex[i] == '\\':
+                        if i + 1 < len(regex):
+                            if regex[i+1]=='s':
+                                _str+=' '
+                            elif regex[i+1]=='"':
+                                _str+='"'
+                            else:
+                                _str+=regex[i+1] if regex[i+1] not in reserved else '\\'+regex[i+1]
+                            
+                            i += 1
+                        else:
+                            _str += regex[i]
+                    else:
+                        _str += regex[i]
+                        
+                    i += 1
+                if i < len(regex): 
+                    _str += regex[i]
+                    _str = _str[1:-1]
+                    j = 0
+                    while j<len(_str):
+                        if _str[j]=='\\':
+                            tokens.append('\\'+_str[j+1])
+                            j+=1
+                        else:
+                            tokens.append(_str[j])
+                        j += 1
+                    i+=1
+                else:
+                    tokens.append(first_char)
+                    i=first_i
+                    
+            elif char == '[':
                 clase_char = char
                 i += 1
-
-                first_i = i
+                
+                first_i=i
                 first_char = char
-
-                while i < len(regex) and regex[i] != "]":
-                    if regex[i] == "\\":
+                while i < len(regex) and regex[i] != ']':
+                    if regex[i] == '\\':
                         if i + 1 < len(regex):
-                            # Escape de caracteres importantes en las clases
-                            if regex[i + 1] == "s":
-                                clase_char += " "
-                            elif regex[i + 1] == "[":
-                                clase_char += "["
-                            elif regex[i + 1] == "]":
-                                clase_char += "]"
+                            if regex[i+1]=='s':
+                                clase_char+=' '
+                            elif regex[i+1]=='t':
+                                clase_char+='\t'
+                            elif regex[i+1]=='n':
+                                clase_char+='\n'
+                            elif regex[i+1]=='[':
+                                clase_char+='['
+                            elif regex[i+1]==']':
+                                clase_char+=']'
                             else:
-                                clase_char += "\\" + regex[i + 1]
-
+                                clase_char+=regex[i+1] if regex[i+1] not in reserved else '\\'+regex[i+1]
+                            
                             i += 1
                         else:
                             clase_char += regex[i]
                     else:
                         clase_char += regex[i]
-
+                        
                     i += 1
-                if (
-                    i < len(regex)
-                ):  # Asegurarse de incluir el ']' si no se ha llegado al final de la regex
+                if i < len(regex):  
                     clase_char += regex[i]
                     tokens.append(clase_char)
                     i += 1
                 else:
-                    # Si no se encuentra la estructura de una clase, se agrega unicamente el caracter '['
                     tokens.append(first_char)
-                    i = first_i
-
-            elif char in {"*", "+", "?", "|"}:
+                    i=first_i
+            elif char in {'*', '+', '?', '|'}:
                 tokens.append(char)
                 i += 1
-
-            elif char in {"(", ")"}:
+            elif char in {'(', ')'}:
                 tokens.append(char)
                 i += 1
-
             else:
-                if char == ".":
-                    # If the dot is not escaped, raise a ValueError
-                    if i == 0 or regex[i - 1] != "\\":
-                        raise ValueError("Dot must be escaped in regex")
-                elif char == "_":
-                    tokens.append("[' '-'~']")
-                else:
-                    tokens.append(char)
+                tokens.append(char)
                 i += 1
-        (tokens)
+
         return tokens
 
     def format(self):
-        tokens = self.tokens
-        allOperators = ["|", "?", "+", "*", "#"]
-        binaryOperators = ["|", "#"]
+        allOperators = ['|', '?', '+', '*']
+        binaryOperators = ['|']
         res = []
-
-        def handle_operator(index, operator, empty_symbol="ε"):
+        
+        tokens = self.tokens
+        
+        def handle_operator(index, operator, empty_symbol='ϵ'):
             nonlocal tokens
-            if tokens[index - 1] != ")":
-                if operator == "+":
-                    tokens[index - 1 : index + 1] = [
-                        "(",
-                        tokens[index - 1],
-                        tokens[index - 1],
-                        "*",
-                        ")",
-                    ]
-                elif operator == "?":
-                    tokens[index - 1 : index + 1] = [
-                        "(",
-                        tokens[index - 1],
-                        "|",
-                        empty_symbol,
-                        ")",
-                    ]
+            if tokens[index - 1] != ')':
+                if operator == '+':
+                    tokens[index - 1:index + 1] = ['(',tokens[index - 1], tokens[index - 1], '*',')']
+                elif operator == '?':
+                    tokens[index - 1:index + 1] = ['(', tokens[index - 1], '|', empty_symbol, ')']
             else:
                 j = index - 2
                 count = 0
-                while j >= 0 and (tokens[j] != "(" or count != 0):
-                    if tokens[j] == ")":
+                while j >= 0 and (tokens[j] != '(' or count != 0):
+                    if tokens[j] == ')':
                         count += 1
-                    elif tokens[j] == "(":
+                    elif tokens[j] == '(':
                         count -= 1
                     j -= 1
-                if tokens[j] == "(" and count == 0:
-                    if operator == "+":
-                        tokens[j : index + 1] = (
-                            ["("] + tokens[j:index] + tokens[j:index] + ["*"] + ["("]
-                        )
-                    elif operator == "?":
-                        tokens[j : index + 1] = (
-                            ["("] + tokens[j:index] + ["|", empty_symbol, ")"]
-                        )
-
+                if tokens[j] == '(' and count == 0:
+                    if operator == '+':
+                        tokens[j:index + 1] = ['(']+tokens[j:index] + tokens[j:index] + ['*'] +[')']
+                    elif operator == '?':
+                        tokens[j:index + 1] = ['('] + tokens[j:index] + ['|', empty_symbol, ')']
+        
         def expand_character_class(char_class):
             characters = []
-            i = 0
+            complement = False
+            i=0
             while i < len(char_class):
                 c = char_class[i]
-                if c == "'":
-                    if char_class[i + 1] == "\\":
-                        if char_class[i + 2] == "s":
-                            characters.append(" ")
-                        elif char_class[i + 2] == "t":
-                            characters.append("\t")
-                        elif char_class[i + 2] == "n":
-                            characters.append("\n")
-                        else:
-                            characters.append(char_class[i + 2])
-                        i += 1
+                if c=='^':
+                    complement = True
+                elif c=="'":
+                    if char_class[i+1]=='\\':
+                        characters.append(char_class[i+2])
+                        i+=1
                     else:
-                        characters.append(char_class[i + 1])
-                    i += 2
-                elif c == "-":
+                        characters.append(char_class[i+1])
+                    i+=2
+                elif c=="-":
                     start = characters.pop()
-                    end = char_class[i + 2]
-
+                    end = char_class[i+2]
+                    
                     for c in range(ord(start), ord(end) + 1):
                         characters.append(chr(c))
-                    i += 3
-                elif c == '"':
-                    j = i + 1
-                    while j < len(char_class):
-                        if char_class[j] != '"':
-                            if char_class[j] == "\\":
-                                if j + 1 < len(char_class):
-                                    if char_class[j + 1] == "s":
-                                        characters.append(" ")
-                                    elif char_class[j + 1] == "t":
-                                        characters.append("\t")
-                                    elif char_class[j + 1] == "n":
-                                        characters.append("\n")
-                                    else:
-                                        characters.append(char_class[j + 1])
-                                    j += 1
-                            else:
-                                characters.append(char_class[j])
+                    i+=3
+                elif c=='"':
+                    j=i+1
+                    while j<len(char_class):
+                        if char_class[j]!='"':
+                            characters.append(char_class[j])
                         else:
                             break
-                        j += 1
-                    i = j
-                i += 1
-
-            expanded = "".join(item for item in characters)
-            return expand_string('"' + expanded + '"')
-
-        def expand_string(string):
-            reserved = ["|", "*", ".", "(", ")", "?", "+"]
+                        j+=1
+                    i=j
+                i+=1
+            
+            if not complement:
+                expanded = ''.join(item for item in characters)
+                return expand_string('"'+expanded+'"')
+            else:
+                return None
+                            
+        def expand_string(_str):
+            reserved = ['|','*','.','(',')','+','?',"'",'"']
             expanded = []
-
-            char_class = string[1:-1]
+            
+            char_class = _str[1:-1]
             for c in char_class:
                 if c in reserved:
-                    expanded.append("\\" + c)
+                    expanded.append('\\'+c)
                 else:
                     expanded.append(c)
-                expanded.append("|")
-
+                expanded.append('|')
+            
             expanded.pop()
-            return ["("] + [char for char in expanded] + [")"]
+            return ['('] + [char for char in expanded] + [')']
+        
+        def expand_characters():
+            characters = []
+            reserved = ['|','*','.','(',')','+','?',"'",'"']
+            caracteres_ascii = [chr(i) for i in range(32,127)]
+            
+            for c in caracteres_ascii:
+                if c in reserved:
+                    characters.append('\\'+c)
+                elif c=='\\':
+                    characters.append(str(ord(c)))
+                else:
+                    characters.append(c)
+                characters.append('|')
+            characters.pop()
+            
+            return ['('] + [char for char in characters] + [')']
+                    
 
         i = 0
         while i < len(tokens):
-            if tokens[i] == "+":
-                handle_operator(i, "+")
-                continue
+            if tokens[i] == '+':
+                handle_operator(i, '+')
+                continue  
             i += 1
 
         i = 0
         while i < len(tokens):
-            if tokens[i] == "?":
-                handle_operator(i, "?")
+            if tokens[i] == '?':
+                handle_operator(i, '?')
                 continue
             i += 1
-
+            
         i = 0
         while i < len(tokens):
             token = tokens[i]
-
-            # if token == "_":
-            #     for c in range(32, 127):
-            #         if chr(c) in ["|", "*", ".", "(", ")", "_"]:
-            #             tokens.append("\\" + chr(c))
-            #         else:
-            #             tokens.append(chr(c))
-            #         tokens.append("|")
-
-            if token.startswith("[") and token.endswith("]"):
+            
+            if token.startswith('[') and token.endswith(']'):
                 expanded_tokens = expand_character_class(token)
                 res.extend(expanded_tokens)
-
+            # Verifica la expansion de caracteres    
+            elif token=='_':
+                expanded_tokens = expand_characters()
+                res.extend(expanded_tokens)
+                
             else:
                 res.append(token)
-
+                
             if i + 1 < len(tokens):
                 next_token = tokens[i + 1]
-                if token not in binaryOperators + [
-                    "("
-                ] and next_token not in allOperators + [")", "."]:
-                    res.append(".")
+                if token not in binaryOperators + ['('] and next_token not in allOperators + [')', '.']:
+                    res.append('.')
             i += 1
-
+            
+        
         return res
 
     def shunting_yard(self):
@@ -270,8 +298,5 @@ class Regex:
 
         while len(stack) > 0:
             postfix.append(stack.pop())
-
-        postfix.append("#")
-        postfix.append(".")
-
+            
         return postfix

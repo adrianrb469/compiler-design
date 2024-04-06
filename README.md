@@ -1,2 +1,3 @@
-# lab3-yalex
+# labD-yalex
+
 Yalex parser

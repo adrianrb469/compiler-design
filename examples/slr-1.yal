@@ -1,19 +1,43 @@
 (* Lexer para Gramática No. 1 - Expresiones aritméticas simples para variables *)
 
-(* Introducir cualquier header aqui *)
+{PLUS = "PLUS"
+TIMES = "TIMES"
+ID = "ID" 
+LPAREN = "LPAREN"
+RPAREN = "RPAREN"
+NULL = "NULL"
+TRUE = "TRUE"
+FALSE = "FALSE"
+NUMBER = "NUMBER"
+LT = "LT"
+GT = "GT"
+EQ = "EQUALS"
+SEMICOLON = "SEMICOLON"
+DDOTS = "DDOTS"}
 
 let delim = [' ''\t''\n']
 let ws = delim+
 let letter = ['A'-'Z''a'-'z']
 let digit = ['0'-'9']
 let id = letter(letter|digit)*
+let number = digit('.'digit)?('E'['+''-']?digit)?
 
 rule tokens = 
-    ws        
+    ws	      { print("\\WS")}
+  | "if"      { print("IF")}
+  | "null"    { return NULL }
+  | "else"    { print("ELSE")}
+  | "True"    { return TRUE }
+  | "False"   { return FALSE }
+  | number    { return NUMBER }
   | id        { return ID }               (* Cambie por una acción válida, que devuelva el token *)
   | '+'       { return PLUS }
   | '*'       { return TIMES }
   | '('       { return LPAREN }
   | ')'       { return RPAREN }
-
-(* Introducir cualquier trailer aqui *)
+  | '<'       { return LT }
+  | '>'       { return GT }
+  | '='       { return EQ }
+  | ';'       { return SEMICOLON }
+  | ':'       { return DDOTS }
+  

@@ -5,20 +5,21 @@
 let delim = ["\s\t\n"]
 let ws = delim+
 let letter = ['A'-'Z''a'-'z']
+let prueba = ['0'-'9']
 let digit = ['0'-'9']
 let digits = digit+
 let id = letter(letter|digit)*
-let number = digits(\.digits)?('E'['+''-']?digits)?
+let number = digits('.'digits)?('E'['+''-']?digits)?
 
 rule tokens = 
-  ws                     
-  | id        { return ID } 
-  | number    { return NUMBER }
-  | '+'       { return PLUS }
-  | '-'       { return MINUS }  (* Cambie por una acción válida, que devuelva el token *)
-  | '*'       { return TIMES }
-  | '/'       { return DIV }
-  | '('       { return LPAREN }
-  | ')'       { return RPAREN }
+    ws        { return "WHITESPACE" }               (* Cambie por una acción válida, que devuelva el token *)
+  | id        { return "ID" }
+  | number    { return "NUMBER" }
+  | '+'       { return "PLUS" }
+  | '-'       { return "MINUS" }
+  | '*'       { return "TIMES" }
+  | '/'       { return "DIV" }
+  | '('       { return "LPAREN" }
+  | ')'       { return "RPAREN" }
 
 (* Introducir cualquier trailer aqui *)

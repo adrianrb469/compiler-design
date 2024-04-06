@@ -7,6 +7,7 @@ from render import render_tree
 class SyntaxTree:
     def __init__(self, regex):
         self.operands = self.getOperands(regex)
+        # self.operands = {"*", "|", "."}
         # self.regex = shunting_yard(regex)
         self.regex = regex
         self.root = self.syntax_tree(self.regex)
@@ -15,6 +16,7 @@ class SyntaxTree:
         calc_firstpos(self.root)
         calc_lastpos(self.root)
         calc_followpos(self.root)
+        
 
     def syntax_tree(self, expression):
         stack = []
@@ -34,11 +36,25 @@ class SyntaxTree:
         return stack.pop()  # The final syntax tree root node
 
     def getOperands(self, regex):
-        operands = set()
-        for char in regex:
-            if char not in {"*", "|", ".", "ϵ", "(", ")"}:
-                operands.add(char)
-        return operands
+        alphabet = set()
+        reserved = {"*", "|", ".", "ϵ"}
+        i=0
+        while i<len(regex):
+            char = regex[i]
+            if char[0] == '\\':
+                if len(char)>1:
+                    #Caracter escapado
+                    alphabet.add(char[1])
+                else:
+                    #Agregar \
+                    alphabet.add(char[0])
+            elif char not in reserved:
+                #Agregar caracter
+                alphabet.add(char)
+                
+            i+=1
+                
+        return  alphabet
 
     def render(self):
         render_tree(self.root)

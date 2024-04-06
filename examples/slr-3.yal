@@ -6,11 +6,11 @@ let delim = [' ''\t''\n']
 let ws = delim+
 let digit = ["0123456789"]
 let digits = digit+
-let number = digits(\.digits)?('E'['+''-']?digits)?
+let number = digits('.'digits)?('E'['+''-']?digits)?
 
 rule tokens = 
-    ws                   
-  | number    { return NUMBER }  (* Cambie por una acción válida, que devuelva el token *)
+    ws        { return WHITESPACE }               (* Cambie por una acción válida, que devuelva el token *)
+  | number    { return NUMBER }
   | '+'       { return PLUS }
   | '*'       { return TIMES }
   | '('       { return LPAREN }

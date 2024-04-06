@@ -4,27 +4,42 @@ from directConstruction import DirectDFA
 from syntax_tree import SyntaxTree
 from utils import print_definitions, print_rules
 
-
 class Yalex:
-    def __init__(self, filename: str) -> None:
+    """
+    Parses a Yalex file, returning the final regex and the rules.
+    """
+    def __init__(self, filename: str) -> ():
         self.definitions = {}
         self.rules = {}
         self.parse_definitions(filename)
-        # self.parse_rules(filename)
-
-        self.parse_rules2(filename)
+        self.parse_rules(filename)
+        self.parse_header(filename)
+        
 
         print_definitions(self.definitions)
-        print_rules(self.rules)
-
+        
         def replace_keywords(rule):
             if rule in self.definitions:
-                return f"({self.definitions[rule]})"
+                return self.definitions[rule]
             return rule
 
-        self.final_regex = "|".join(
-            replace_keywords(rule) for rule in self.rules.values()
-        )
+        self.final_regex = "(" + "|".join(
+            replace_keywords(rule[0]) + '#' for rule in self.rules.values()
+        ) + ")"
+        
+        self.tokens = [(v[0], v[1]) for k, v in self.rules.items()]
+    
+    def parse_header(self, filename: str) -> None:
+        with open(filename, "r") as f:
+            content = f.read()
+            content_before_let = content.split("let")[0]  # split on "let" and take the first part
+            if "{" in content_before_let and "}" in content_before_let:
+                header = content_before_let.split("{")[1].split("}")[0]  # split on "{" and "}" as before
+                print("Header: ", header)
+                print("\n")
+                self.header = header
+            else:
+                print("No header found in the file.")
 
     def parse_definitions(self, filename: str) -> None:
         with open(filename, "r") as f:
@@ -63,61 +78,34 @@ class Yalex:
 
         self.definitions = format_definitions(self.definitions)
 
-    def parse_rules2(self, filename: str) -> None:
-        with open(filename, "r") as file:
-            content = file.read()
-
-        # Find the line containing the keyword "rule"
-        rule_index = content.find("rule")
-
-        # Find the "=" sign after "rule"
-        equal_index = content.find("=", rule_index)
-
-        # Get the tokens part
-        tokens_part = content[equal_index + 1 :]
-
-        # Split by '|'
-        tokens = tokens_part.split("|")
-
-        # Trim, remove the part inside {}, remove single quotes, double quotes
-        tokens = [
-            token.split("{")[0].strip().strip("'").strip('"').replace("\\", "")
-            for token in tokens
-        ]
-
-        # escape regex special characters
-        tokens = [re.escape(token) for token in tokens]
-        self.rules = dict(enumerate(tokens))
-
     def parse_rules(self, filename: str) -> None:
         with open(filename, "r") as file:
             content = file.read()
 
-        # Find the line containing the keyword "rule"
-        rule_index = content.find("rule")
-        if rule_index == -1:
-            return []
+            # Find the line containing the keyword "rule"
+            rule_index = content.find("rule")
 
-        # Extract the content after the "rule" line
-        content = content[rule_index:]
+            # Find the "=" sign after "rule"
+            equal_index = content.find("=", rule_index)
 
-        pattern = (
-            r"(\w+)\s*\{\s*return\s*(\w+)\s*\}|\'([^\'\\])\'\s*\{\s*return\s*(\w+)\s*\}"
-        )
-        matches = re.findall(pattern, content)
+            # Get the tokens part
+            tokens_part = content[equal_index + 1 :]
 
-        tokens = []
-        for match in matches:
-            print(match)
-            if match[0]:
-                token_name = match[0]
-                token_value = token_name
-            else:
-                token_name = match[3]
-                token_value = match[2]
-                if token_value in ["+", "-", "*", "/", "(", ")"]:
-                    token_value = f"\\{token_value}"
+            # Split by '|'
+            tokens = tokens_part.split("|")
 
-            tokens.append((token_name, token_value))
+            token_info = []
+            for token in tokens:
+                token = token.strip()
+                if "{" in token and "}" in token:
+                    
+                    token_parts = token.split("{")
+                    token_regex = token_parts[0].strip().replace("\\", "")
+                    token_action = token_parts[1].split("}")[0].strip()
+                    token_info.append((token_regex, token_action))
+                else:
+                    token_regex = token.strip().replace("\\", "")
+                    token_info.append((token_regex, None))
 
-        self.rules = dict(tokens)
+            self.rules = dict(enumerate(token_info))
+

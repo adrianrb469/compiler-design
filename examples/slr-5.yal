@@ -12,16 +12,20 @@ let number = digits('.'digits)?(E['+''-']?digits)?
 
 rule tokens =
     ws { return WHITESPACE }
-    | 'if' {return if}
+    | "if" {return if }
     | id { return ID }
     | letter { return S}
     | number { return NUMBER }
     | '+' { return PLUS }
     | '-' { return MINUS }
     | '*' { return TIMES }
-    | '/' { return DIV }
+    | ':' { return DOTS }
+    | ';' { return SEMICOLON }
     | '(' { return LPAREN }
     | ')' { return RPAREN }
+    | '/' { return DIV }
     | '>' { return GT }
-
+    | '{' { return OPENC }
+    | '}' { return CLOSEC }
+    
 (* Introducir cualquier trailer aqui *)

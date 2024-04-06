@@ -1,36 +1,27 @@
-from Regex import Regex
-from Yalex import Yalex
-from syntax_tree import SyntaxTree
-from directDfa import DirectDFA
-from pickle import dump
-
-yalex = Yalex("examples/slr-1.yal")
-print("Tokens: \n", yalex.tokens, "\n")
-print("Final Regex: \n", yalex.final_regex)
-
-postfix = Regex(yalex.final_regex).shunting_yard()
-
-tree = SyntaxTree(postfix)
-tree.render()
-
-
-dfa = DirectDFA()
-dfa.generate_direct_dfa(tree)
-dfa.set_actions(yalex.tokens)
-dfa.minimize()
-dfa.render()
-
-content = f"""# Scanner generated automatically by Yalex. Do not modify this file.
+# Scanner generated automatically by Yalex. Do not modify this file.
 import pickle
-{yalex.header}
+PLUS = "PLUS"
+TIMES = "TIMES"
+ID = "ID" 
+LPAREN = "LPAREN"
+RPAREN = "RPAREN"
+NULL = "NULL"
+TRUE = "TRUE"
+FALSE = "FALSE"
+NUMBER = "NUMBER"
+LT = "LT"
+GT = "GT"
+EQ = "EQUALS"
+SEMICOLON = "SEMICOLON"
+DDOTS = "DDOTS"
 def execute_action(action, token):
-    local_namespace = {{}}
+    local_namespace = {}
 
-    function_code = f'def tempFunction():\\n'
+    function_code = f'def tempFunction():\n'
     if action:
-        function_code += f'    {{action}}\\n'
+        function_code += f'    {action}\n'
     else:
-        function_code += f'    pass\\n'
+        function_code += f'    pass\n'
 
     function_code += 'result = tempFunction()'
 
@@ -38,8 +29,9 @@ def execute_action(action, token):
         exec(function_code, globals(), local_namespace)
         return local_namespace['result']
     except Exception as e:
-        print(f"Error executing the action: {{e}}")
+        print(f"Error executing the action: {e}")
         return None
+
 
 def recognize_tokens(dfa, file_path):
     # Read the file
@@ -92,15 +84,3 @@ if __name__ == "__main__":
     with open("dfa.pkl", "rb") as file:
         dfa = pickle.load(file)
     recognize_tokens(dfa, "test.txt")
-"""
-
-# Save the DFA to a pickle file
-with open("dfa.pkl", "wb") as file:
-    dump(dfa, file)
-
-# Write the content to a file
-with open("Scan.py", "w") as file:
-    file.write(content)
-    
-print("Scan.py generated in current directory.")
-    

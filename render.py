@@ -67,12 +67,69 @@ def create_graph(root):
     return graph
 
 
-def create_direct_dfa_graph(states, transitions, minimized=False):
-    # Convert sets to strings
-    # states = [str(state) for state in states]
-    # start_state = str(start_state)
-    # acceptance_states = [state for state in acceptance_states]
+# def create_direct_dfa_graph(states, transitions, minimized=False):
+#     # Convert sets to strings
+#     # states = [str(state) for state in states]
+#     # start_state = str(start_state)
+#     # acceptance_states = [state for state in acceptance_states]
 
+#     # Create a DOT format representation of the DFA
+#     dot = pydotplus.Dot()
+#     dot.set_rankdir("LR")  # Use 'TB' for top to bottom layout
+#     dot.set_prog("neato")
+
+#     # Create nodes for each state
+#     state_nodes = {}
+#     num = 0
+#     for state in states:
+#         if state.state != {"Ø"}:
+#             node = pydotplus.Node(num)
+#             node.set_name(str(state.state))
+#             if state.initial:
+#                 # node.set_name("Start")
+#                 node.set_shape("circle")
+#                 node.set_style("filled")
+#                 # node.set_name("Start")
+#                 node.set_name(str(state.state))
+
+#             if state.accepting:
+#                 node.set_shape("doublecircle")  # Final states are double circled
+#                 node.set_name(str(state.label))
+#             node.set_fontsize(12)  # Set font size
+#             node.set_width(0.6)  # Set the desired width
+#             node.set_height(0.6)  # Set the desired height
+#             state_nodes[str(state.state)] = node
+#             # print(state.state)
+#             dot.add_node(node)
+
+#             num += 1
+
+#     for transition in transitions:
+#         if (
+#             transition.symbol != "#"
+#             and str(transition.originState) in state_nodes
+#             and str(transition.destinationState) in state_nodes
+#         ):
+#             # print(transition.originState, transition.symbol, transition.destinationState)
+#             edge = pydotplus.Edge(
+#                 state_nodes[str(transition.originState)],
+#                 state_nodes[str(transition.destinationState)],
+#                 label=str(transition.symbol),
+#             )
+#             dot.add_edge(edge)
+
+#     pydotplus.find_graphviz()
+
+#     graph = dot
+
+#     # Save or display the graph
+#     if not minimized:
+#         pdf_file_path = "direct_dfa.pdf"
+#     else:
+#         pdf_file_path = "min_direct_dfa.pdf"
+#     graph.write_pdf(pdf_file_path)  # Save PDF file
+  
+def create_direct_dfa_graph(dfa, minimized=False):
     # Create a DOT format representation of the DFA
     dot = pydotplus.Dot()
     dot.set_rankdir("LR")  # Use 'TB' for top to bottom layout
@@ -81,50 +138,40 @@ def create_direct_dfa_graph(states, transitions, minimized=False):
     # Create nodes for each state
     state_nodes = {}
     num = 0
-    for state in states:
+    for state in dfa.states:
         if state.state != {"Ø"}:
             node = pydotplus.Node(num)
             node.set_name(str(state.state))
             if state.initial:
-                # node.set_name("Start")
                 node.set_shape("circle")
                 node.set_style("filled")
-
+                node.set_name('Start');
             if state.accepting:
                 node.set_shape("doublecircle")  # Final states are double circled
+                node.set_name(str(state.label))
             node.set_fontsize(12)  # Set font size
             node.set_width(0.6)  # Set the desired width
             node.set_height(0.6)  # Set the desired height
             state_nodes[str(state.state)] = node
-            # print(state.state)
             dot.add_node(node)
-
             num += 1
 
-    for transition in transitions:
-        if (
-            transition.symbol != "#"
-            and str(transition.originState) in state_nodes
-            and str(transition.destinationState) in state_nodes
-        ):
-            # print(transition.originState, transition.symbol, transition.destinationState)
-            edge = pydotplus.Edge(
-                state_nodes[str(transition.originState)],
-                state_nodes[str(transition.destinationState)],
-                label=str(transition.symbol),
-            )
-            dot.add_edge(edge)
+    # Create edges for each transition
+    for state in dfa.states:
+        for symbol, next_state in state.transitions.items():
+            if symbol != "#" and str(state.state) in state_nodes and str(next_state.state) in state_nodes:
+                edge = pydotplus.Edge(
+                    state_nodes[str(state.state)],
+                    state_nodes[str(next_state.state)],
+                    label=str(symbol),
+                )
+                dot.add_edge(edge)
 
     pydotplus.find_graphviz()
-
     graph = dot
 
-    # Save or display the graph
-    if not minimized:
-        png_file_path = "result/direct_dfa.png"
-    else:
-        png_file_path = "result/min_direct_dfa.png"
-    graph.write_png(png_file_path)  # Save PNG file
+
+    graph.write_pdf('dfa.pdf')
 
 
 def render_nfa(nfa):
@@ -172,9 +219,16 @@ def render_dfa(dfa, name="dfa"):
             continue
 
         if dfa_state.id not in seen_states:
+            label = ""
+            
+            if new_dfa_state.label is not None:
+                    label = new_dfa_state.label
+            else:
+                    label = new_dfa_state.id
+            
             graph.add_node(
                 pydotplus.Node(
-                    str(dfa_state.id),
+                    str(label),
                     shape="doublecircle" if dfa_state.is_accepting else "circle",
                     style="filled" if dfa_state.is_start else "",
                 )
@@ -183,6 +237,8 @@ def render_dfa(dfa, name="dfa"):
 
         for input, new_dfa_state in dfa_state.transitions.items():
             if new_dfa_state.id not in seen_states:
+               
+                
                 graph.add_node(
                     pydotplus.Node(
                         str(new_dfa_state.id),
