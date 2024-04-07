@@ -11,14 +11,15 @@ class Regex:
         self.formatted_regex = self.format()
 
     def tokenize(self, regex):
-        reserved = ['|','*','.','(',')','+','?',"'",'"']
         tokens = []
+        reserved = ['|','*','.','(',')','+','?',"'",'"']
         i = 0
         while i < len(regex):
             char = regex[i]
 
             if char == '\\':
                 if i + 1 < len(regex):
+                    #Interpretacion manual
                     if regex[i+1]=='s':
                         tokens.append(' ')
                     elif regex[i+1]=='t':
@@ -31,7 +32,6 @@ class Regex:
                 else:
                     tokens.append(char)
                     i += 1
-            
             elif char=="'":
                 if i + 2 < len(regex) and regex[i+2]=="'":
                     res = regex[i+1] if regex[i+1] not in reserved else '\\'+regex[i+1]
@@ -40,7 +40,6 @@ class Regex:
                 else:
                     tokens.append(char)
                     i += 1
-                  
             elif char == '"':
                 _str = char
                 i += 1
@@ -71,9 +70,11 @@ class Regex:
                     j = 0
                     while j<len(_str):
                         if _str[j]=='\\':
+                            
                             tokens.append('\\'+_str[j+1])
                             j+=1
                         else:
+                            
                             tokens.append(_str[j])
                         j += 1
                     i+=1
@@ -117,17 +118,28 @@ class Regex:
                 else:
                     tokens.append(first_char)
                     i=first_i
+                    
             elif char in {'*', '+', '?', '|'}:
                 tokens.append(char)
                 i += 1
+
             elif char in {'(', ')'}:
                 tokens.append(char)
                 i += 1
-            else:
-                tokens.append(char)
-                i += 1
 
+            else:
+                if char == ".":
+                     # If the dot is not escaped, raise a ValueError
+                     if i == 0 or regex[i - 1] != "\\":
+                         raise ValueError("Dot must be escaped in regex")
+    
+                else:
+                    tokens.append(char)
+                    i += 1
+            
         return tokens
+
+    
 
     def format(self):
         allOperators = ['|', '?', '+', '*']
@@ -136,7 +148,7 @@ class Regex:
         
         tokens = self.tokens
         
-        def handle_operator(index, operator, empty_symbol='ϵ'):
+        def handle_operator(index, operator, empty_symbol='ε'):
             nonlocal tokens
             if tokens[index - 1] != ')':
                 if operator == '+':
@@ -158,14 +170,17 @@ class Regex:
                     elif operator == '?':
                         tokens[j:index + 1] = ['('] + tokens[j:index] + ['|', empty_symbol, ')']
         
+        #Funcion para reconstruir todas las clases en un solo formato ["abc..."]
         def expand_character_class(char_class):
             characters = []
             complement = False
             i=0
             while i < len(char_class):
                 c = char_class[i]
+                #En caso complementoo
                 if c=='^':
                     complement = True
+                #Comillas simples
                 elif c=="'":
                     if char_class[i+1]=='\\':
                         characters.append(char_class[i+2])
@@ -173,6 +188,7 @@ class Regex:
                     else:
                         characters.append(char_class[i+1])
                     i+=2
+                #Guion
                 elif c=="-":
                     start = characters.pop()
                     end = char_class[i+2]
@@ -180,6 +196,7 @@ class Regex:
                     for c in range(ord(start), ord(end) + 1):
                         characters.append(chr(c))
                     i+=3
+                #Comillas dobles (sin escape de ")
                 elif c=='"':
                     j=i+1
                     while j<len(char_class):
@@ -196,7 +213,10 @@ class Regex:
                 return expand_string('"'+expanded+'"')
             else:
                 return None
-                            
+            
+                
+
+        #Funcion para reconstruir la clase en formato ["abc.."] en (a|b|c...)    
         def expand_string(_str):
             reserved = ['|','*','.','(',')','+','?',"'",'"']
             expanded = []
@@ -212,6 +232,7 @@ class Regex:
             expanded.pop()
             return ['('] + [char for char in expanded] + [')']
         
+        #Funcion para expandir (_)
         def expand_characters():
             characters = []
             reserved = ['|','*','.','(',')','+','?',"'",'"']
@@ -251,7 +272,7 @@ class Regex:
             if token.startswith('[') and token.endswith(']'):
                 expanded_tokens = expand_character_class(token)
                 res.extend(expanded_tokens)
-            # Verifica la expansion de caracteres    
+                
             elif token=='_':
                 expanded_tokens = expand_characters()
                 res.extend(expanded_tokens)

@@ -1,46 +1,85 @@
 from render import create_direct_dfa_graph
 
+R_END = '※'
+
 class DirectDFAState:
-    def __init__(self, state, marked=False, accepting=False, initial=False, accept_pos=None):
+    def __init__(self, state,state_id, marked=False, accepting=False, initial=False, accept_pos=None,subset=set()):
         self.state = state
         self.accepting = accepting
         self.marked = marked
         self.initial = initial
-        self.transitions = {}  # Transitions from the state
-        self.accept_pos = accept_pos  # Position of '#' if it exists in the state
-        self.action = None  # Action associated with the state
-        self.label = None  # Label associated with the state
+        self.subset =  subset
+        self.state_id = state_id
+        self.transitions = {}  
+        self.transitions_ids = {}  
+        self.accept_pos = accept_pos  
+        self.action = None 
+        self.label = None  
 
 class DirectDFA:
     def __init__(self):
         self.states = []
         self.initial_state = None
         self.final_states = set()
+        self.state_counter = 0
 
-    def generate_direct_dfa(self, syntax_tree):
-        initial_positions = syntax_tree.root.firstpos
-        self.initial_state = self.get_state(initial_positions)
-        self.initial_state.initial = True
-        self.states.append(self.initial_state)
+    def generate_direct_dfa(self, syntax_tree, root):
+        followPosTable, posTable = syntax_tree.followPosTable, syntax_tree.posTable
+        
+        initial_state = DirectDFAState(state=root.firstPos, state_id=self.state_counter, initial=True, subset=root.firstPos)
+        self.initial_state, self.states, self.state_counter = initial_state, [initial_state], self.state_counter + 1
 
-        queue = [self.initial_state]
-        while queue:
-            current_state = queue.pop(0)
-            for symbol in syntax_tree.operands:
-                next_positions = set()
-                for position in current_state.state:
-                    if syntax_tree.node_map[position].value == symbol:
-                        next_positions.update(syntax_tree.node_map[position].followpos)
-                if next_positions:
-                    next_state = self.get_state(next_positions)
-                    current_state.transitions[symbol] = next_state
-                    if next_state not in self.states:
-                        self.states.append(next_state)
-                        queue.append(next_state)
-                    if any(syntax_tree.node_map[pos].value == '#' for pos in next_positions):
-                        next_state.accepting = True
-                        next_state.accept_pos = next(pos for pos in next_positions if syntax_tree.node_map[pos].value == '#')
-                        self.final_states.add(next_state)
+
+        for pos in initial_state.state:
+            if pos in posTable[R_END]:
+                initial_state.accepting, initial_state.accept_pos = True, pos
+                self.final_states.add(initial_state)
+
+        alphabet = syntax_tree.operands
+
+        counter, new_states, first_iteration = 0, 0, False
+
+        while counter != new_states or not first_iteration:
+          
+            first_iteration, counter = True, counter + (new_states != 0)
+
+            for symbol in alphabet:
+                change = True
+                subset = set()
+
+                for pos in self.states[counter].state:
+                    if pos in posTable[symbol]:
+                        subset = subset.union(followPosTable[pos])
+
+                # Check if the new state is already created
+                for state in self.states:
+                    if state.state == subset:
+                        self.states[counter].transitions[symbol] = state
+                        
+                        self.states[counter].transitions_ids[symbol] = state.state_id
+                        
+                        change = False
+                        break
+                    
+                if change and len(subset) > 0:
+                    new_state = DirectDFAState(state=subset, subset=subset,state_id=self.state_counter)
+                    self.states[counter].transitions_ids[symbol] = self.state_counter
+                    
+                    self.state_counter += 1
+
+                    for pos in new_state.state:
+                        if pos in posTable[R_END]:
+                            new_state.accepting = True
+                            new_state.accept_pos = pos
+                            self.final_states.add(new_state)
+                            break
+
+                    self.states[counter].transitions[symbol] = new_state
+                    
+                    self.states.append(new_state)
+                    new_states += 1
+
+        return self
 
     def get_state(self, positions):
         for state in self.states:
@@ -50,11 +89,12 @@ class DirectDFA:
         return new_state
 
     def set_actions(self, rule_tokens):
-        acceptance_positions = [state.accept_pos for state in self.states if state.accept_pos is not None]
-        sorted_acceptance_positions = sorted(list(set(acceptance_positions))) # we sort them, as they are the same as the order of the tokens
+        acceptance_positions = [state.accept_pos for state in self.states if state.accepting]
+        sorted_acceptance_positions = sorted(list(set(acceptance_positions))) 
+        
         for state in self.states:
             if state.accept_pos is not None:
-                token, action = rule_tokens[sorted_acceptance_positions.index(state.accept_pos)] # directly get the token and action from the index
+                token, action = rule_tokens[sorted_acceptance_positions.index(state.accept_pos)] 
                 state.action = action
                 state.label = token
     

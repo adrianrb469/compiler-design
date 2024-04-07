@@ -1,3 +1,4 @@
+from curses.ascii import isspace
 import re
 import string
 import pydotplus
@@ -5,8 +6,8 @@ import pydotplus
 
 def render_tree(root):
     graph = create_graph(root)
-    graph.write_png("result/tree.png")
-    graph.write_svg("result/tree.svg")
+    graph.write_pdf("result/ast.pdf")
+
     return graph
 
 
@@ -17,43 +18,10 @@ def add_edges(graph, node, parent_id=None):
     if node is not None:
         node_id = str(counter[0])
         counter[0] += 1
-
-        # if node value is whitespace, newline or tab, replace it with the corresponding escape sequence
-
-        if (len(node.value)) == 1:
-            # if its printable leave it as it is
-
-            if node.value in {
-                ",",
-                "(",
-                ")",
-                "*",
-                "+",
-                ".",
-                "|",
-                "?",
-                "\\",
-                "[",
-                "]",
-                "{",
-                "}",
-                "^",
-                "$",
-                "-",
-            }:
-                node.value = "\\" + node.value
-        elif len(node.value) > 1:
-            # if it has \ before it, remove it
-            if node.value[0] == "\\":
-                node.value = node.value[1:]
-            # if its tab or space replace with "SPACE" or "TAB"
-            if node.value == " ":
-                node.value = "SPACE"
-            elif node.value == "\t":
-                node.value = "TAB"
-
-        # if node.value in {"(", ")", "*", "+", ".", "|"}:
-        #     node.value = "\\" + node.value
+        
+        if isspace(node.value):
+            node.value = re.sub(r"\s+", "ws", node.value)
+        
         graph.add_node(pydotplus.Node(node_id, label=node.value, shape="circle"))
         if parent_id is not None:
             graph.add_edge(pydotplus.Edge(parent_id, node_id))
@@ -137,11 +105,10 @@ def create_direct_dfa_graph(dfa, minimized=False):
 
     # Create nodes for each state
     state_nodes = {}
-    num = 0
     for state in dfa.states:
         if state.state != {"Ø"}:
-            node = pydotplus.Node(num)
-            node.set_name(str(state.state))
+            node = pydotplus.Node(state.state_id)
+            node.set_name(str(state.state_id))
             if state.initial:
                 node.set_shape("circle")
                 node.set_style("filled")
@@ -152,24 +119,18 @@ def create_direct_dfa_graph(dfa, minimized=False):
             node.set_fontsize(12)  # Set font size
             node.set_width(0.6)  # Set the desired width
             node.set_height(0.6)  # Set the desired height
-            state_nodes[str(state.state)] = node
+            state_nodes[state.state_id] = node
             dot.add_node(node)
-            num += 1
 
     # Create edges for each transition
     for state in dfa.states:
-        for symbol, next_state in state.transitions.items():
-            if symbol != "#" and str(state.state) in state_nodes and str(next_state.state) in state_nodes:
-                edge = pydotplus.Edge(
-                    state_nodes[str(state.state)],
-                    state_nodes[str(next_state.state)],
-                    label=str(symbol),
-                )
-                dot.add_edge(edge)
+        for symbol, next_state_id in state.transitions_ids.items():
+            edge_color = "red" if next_state_id > state.state_id else "blue"
+            edge = pydotplus.Edge(state_nodes[state.state_id], state_nodes[next_state_id], label=symbol, color=edge_color)
+            dot.add_edge(edge)
 
     pydotplus.find_graphviz()
     graph = dot
-
 
     graph.write_pdf('dfa.pdf')
 

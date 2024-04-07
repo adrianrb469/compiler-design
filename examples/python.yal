@@ -13,14 +13,16 @@ LT = "LT"
 GT = "GT"
 EQ = "EQUALS"
 SEMICOLON = "SEMICOLON"
+MINUS = "MINUS"
 DDOTS = "DDOTS"}
 
 let delim = [' ''\t''\n']
 let ws = delim+
 let letter = ['A'-'Z''a'-'z']
 let digit = ['0'-'9']
+let digits = digit+
 let id = letter(letter|digit)*
-let number = digit('.'digit)?('E'['+''-']?digit)?
+let number = digits('.'digits)?('E'['+''-']?digit)?
 
 rule tokens = 
     ws	      { print("\\WS")}
@@ -40,4 +42,7 @@ rule tokens =
   | '='       { return EQ }
   | ';'       { return SEMICOLON }
   | ':'       { return DDOTS }
+  | '-'       { return MINUS}
   
+
+{print('hello')}

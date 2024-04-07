@@ -1,0 +1,92 @@
+{PUBLIC = "PUBLIC"
+CLASS = "CLASS"
+STATIC = "STATIC"
+VOID = "VOID"
+MAIN = "MAIN"
+STRING = "STRING"
+INT = "INT"
+BOOLEAN = "BOOLEAN"
+IF = "IF"
+ELSE = "ELSE"
+WHILE = "WHILE"
+RETURN = "RETURN"
+TRUE = "TRUE"
+FALSE = "FALSE"
+IDENTIFIER = "IDENTIFIER"
+NUMBER = "NUMBER"
+STRING_LITERAL = "STRING_LITERAL"
+PLUS = "PLUS"
+MINUS = "MINUS"
+MULTIPLY = "MULTIPLY"
+DIVIDE = "DIVIDE"
+MODULO = "MODULO"
+ASSIGN = "ASSIGN"
+EQUALS = "EQUALS"
+NOT_EQUALS = "NOT_EQUALS"
+LESS_THAN = "LESS_THAN"
+LESS_THAN_OR_EQUAL = "LESS_THAN_OR_EQUAL"
+GREATER_THAN = "GREATER_THAN"
+GREATER_THAN_OR_EQUAL = "GREATER_THAN_OR_EQUAL"
+AND = "AND"
+OR = "OR"
+NOT = "NOT"
+SEMICOLON = "SEMICOLON"
+COMMA = "COMMA"
+LEFT_BRACE = "LEFT_BRACE"
+RIGHT_BRACE = "RIGHT_BRACE"
+LEFT_PAREN = "LEFT_PAREN"
+RIGHT_PAREN = "RIGHT_PAREN"
+LEFT_BRACKET = "LEFT_BRACKET"
+RIGHT_BRACKET = "RIGHT_BRACKET"
+COMMENT = "COMMENT"
+WS = "WS"}
+
+let delim = [' ''\t''\n']
+let ws = delim+
+let letter = ['A'-'Z''a'-'z']
+let digit = ['0'-'9']
+let digits = digit+
+let id = letter(letter|digit)*
+let number = digits('.'digits)?('E'['+''-']?digit)?
+
+rule tokens =
+   id          { return IDENTIFIER }
+  | digit      { return NUMBER }
+  | letter      { print('LETTER')}
+  | ws          { return WS }
+  | "class"     { return CLASS }
+  | "public"    { return PUBLIC }
+  | "static"    { return STATIC }
+  | "void"      { return VOID }
+  | "main"      { return MAIN }
+  | "String"    { return STRING }
+  | "int"       { return INT }
+  | "boolean"   { return BOOLEAN }
+  | "if"        { return IF }
+  | "else"      { return ELSE }
+  | "while"     { return WHILE }
+  | "return"    { return RETURN }
+  | "true"      { return TRUE }
+  | "false"     { return FALSE }
+  | '+'         { return PLUS }
+  | '-'         { return MINUS }
+  | '*'         { return MULTIPLY }
+  | '/'         { return DIVIDE }
+  | '%'         { return MODULO }
+  | '='         { return ASSIGN }
+  | "=="        { return EQUALS }
+  | "!="        { return NOT_EQUALS }
+  | '<'         { return LESS_THAN }
+  | '>'         { return GREATER_THAN }
+  | "&&"        { return AND }
+  | "||"        { return OR }
+  | '!'         { return NOT }
+  | ';'         { return SEMICOLON }
+  | ','         { return COMMA }
+  | '('         { return LEFT_PAREN }
+  | ')'         { return RIGHT_PAREN }
+  | '['         { return LEFT_BRACKET }
+  | ']'         { return RIGHT_BRACKET }
+  
+
+{print('hi')}

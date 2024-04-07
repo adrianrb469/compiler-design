@@ -6,5 +6,4 @@ if (a>2):
   hi=True;
 else: 
   abc = 3.2;
-  abc = abc + 1*(5);
-&
+  abc = abc + 1*(5) - 32;

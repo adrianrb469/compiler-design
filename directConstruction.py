@@ -37,8 +37,6 @@ class DirectDFA:
     
 
     def step(self, current_state, input_symbol):
-        print(current_state)
-        print(self.transitions)
         for transition in self.transitions:
             
             if (
@@ -174,7 +172,6 @@ class DirectDFA:
         # and the '#' is the last symbol in the regex
         # which means the acceptance positions are the last positions in the regex
         sorted_acceptance_positions = sorted(list(set(acceptance_positions)))
-
         
         # Associate the rule actions with the acceptance positions
         for i, state in enumerate(self.states):

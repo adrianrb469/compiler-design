@@ -1,29 +1,17 @@
 # Scanner generated automatically by Yalex. Do not modify this file.
 import pickle
-PLUS = "PLUS"
-TIMES = "TIMES"
-ID = "ID" 
-LPAREN = "LPAREN"
-RPAREN = "RPAREN"
-NULL = "NULL"
-TRUE = "TRUE"
-FALSE = "FALSE"
-NUMBER = "NUMBER"
-LT = "LT"
-GT = "GT"
-EQ = "EQUALS"
-SEMICOLON = "SEMICOLON"
-DDOTS = "DDOTS"
+
 def execute_action(action, token):
     local_namespace = {}
 
-    function_code = f'def tempFunction():\n'
+    function_code = f'def temporary_function():\n'
     if action:
         function_code += f'    {action}\n'
     else:
+        print("Empty action detected for token:", token)
         function_code += f'    pass\n'
 
-    function_code += 'result = tempFunction()'
+    function_code += 'result = temporary_function()'
 
     try:
         exec(function_code, globals(), local_namespace)
@@ -31,7 +19,6 @@ def execute_action(action, token):
     except Exception as e:
         print(f"Error executing the action: {e}")
         return None
-
 
 def recognize_tokens(dfa, file_path):
     # Read the file
@@ -66,7 +53,7 @@ def recognize_tokens(dfa, file_path):
                 last_valid_state = None
             else:
                 # No valid transition found, report an error
-                print("Lexical error:", char, "at position", i, ". Not recognized.")
+                print("Lexical error:", char, "at position", i)
                 # Move to the next character
                 i += 1
                 current_state = dfa.initial_state
@@ -79,8 +66,10 @@ def recognize_tokens(dfa, file_path):
         if action_result is not None:
             print(action_result)
         
+
+with open("dfa.pkl", "rb") as file:
+    dfa = pickle.load(file)
+
+recognize_tokens(dfa, "test2.txt")
     
-if __name__ == "__main__":
-    with open("dfa.pkl", "rb") as file:
-        dfa = pickle.load(file)
-    recognize_tokens(dfa, "test.txt")
+print("hi")

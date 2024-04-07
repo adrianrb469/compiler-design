@@ -4,21 +4,19 @@ from syntax_tree import SyntaxTree
 from directDfa import DirectDFA
 from pickle import dump
 
-yalex = Yalex("examples/slr-1.yal")
+yalex = Yalex("test2.yal")
 print("Tokens: \n", yalex.tokens, "\n")
 print("Final Regex: \n", yalex.final_regex)
 
 postfix = Regex(yalex.final_regex).shunting_yard()
-
 tree = SyntaxTree(postfix)
-tree.render()
+# tree.render()
 
 
 dfa = DirectDFA()
-dfa.generate_direct_dfa(tree)
+dfa.generate_direct_dfa(tree,tree.root)
 dfa.set_actions(yalex.tokens)
-dfa.minimize()
-dfa.render()
+# dfa.render()
 
 content = f"""# Scanner generated automatically by Yalex. Do not modify this file.
 import pickle
@@ -26,13 +24,14 @@ import pickle
 def execute_action(action, token):
     local_namespace = {{}}
 
-    function_code = f'def tempFunction():\\n'
+    function_code = f'def temporary_function():\\n'
     if action:
         function_code += f'    {{action}}\\n'
     else:
+        print("Empty action detected for token:", token)
         function_code += f'    pass\\n'
 
-    function_code += 'result = tempFunction()'
+    function_code += 'result = temporary_function()'
 
     try:
         exec(function_code, globals(), local_namespace)
@@ -74,7 +73,7 @@ def recognize_tokens(dfa, file_path):
                 last_valid_state = None
             else:
                 # No valid transition found, report an error
-                print("Lexical error:", char, "at position", i, ". Not recognized.")
+                print("Lexical error:", char, "at position", i)
                 # Move to the next character
                 i += 1
                 current_state = dfa.initial_state
@@ -87,11 +86,13 @@ def recognize_tokens(dfa, file_path):
         if action_result is not None:
             print(action_result)
         
+
+with open("dfa.pkl", "rb") as file:
+    dfa = pickle.load(file)
+
+recognize_tokens(dfa, "test2.txt")
     
-if __name__ == "__main__":
-    with open("dfa.pkl", "rb") as file:
-        dfa = pickle.load(file)
-    recognize_tokens(dfa, "test.txt")
+{yalex.trailer}
 """
 
 # Save the DFA to a pickle file
@@ -102,5 +103,5 @@ with open("dfa.pkl", "wb") as file:
 with open("Scan.py", "w") as file:
     file.write(content)
     
-print("Scan.py generated in current directory.")
+print("\nScan.py generated in current directory.")
     

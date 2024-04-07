@@ -56,7 +56,7 @@ def shunting_yard(regex):
     for token in regex:
         if token.isalnum() or token in [
             "#",
-            "ϵ",
+            "ε",
         ]:
             queue.append(token)
         elif token == "(":
@@ -113,7 +113,7 @@ def isValidExpression(expression):
         print("\tError: Empty expression")
         return False
     for char in expression:
-        if not char.isalnum() and char not in {"*", "|", ".", "ϵ", "(", ")", "+", "?"}:
+        if not char.isalnum() and char not in {"*", "|", ".", "ε", "(", ")", "+", "?"}:
             print("\tError: Invalid character in expression")
             return False
         if char == "(":

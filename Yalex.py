@@ -14,6 +14,7 @@ class Yalex:
         self.parse_definitions(filename)
         self.parse_rules(filename)
         self.parse_header(filename)
+        self.parse_trailer(filename)
         
 
         print_definitions(self.definitions)
@@ -24,7 +25,7 @@ class Yalex:
             return rule
 
         self.final_regex = "(" + "|".join(
-            replace_keywords(rule[0]) + '#' for rule in self.rules.values()
+            replace_keywords(rule[0]) + '※' for rule in self.rules.values()
         ) + ")"
         
         self.tokens = [(v[0], v[1]) for k, v in self.rules.items()]
@@ -36,10 +37,23 @@ class Yalex:
             if "{" in content_before_let and "}" in content_before_let:
                 header = content_before_let.split("{")[1].split("}")[0]  # split on "{" and "}" as before
                 print("Header: ", header)
-                print("\n")
                 self.header = header
             else:
-                print("No header found in the file.")
+                self.header = ""
+                print("No header found in the file.\n")
+
+    def parse_trailer(self, filename: str) -> None:
+        with open(filename, "r") as f:
+            content = f.read()
+            # get content of last "{" and "}" of the file
+            content_after_let = content.split("let")[-1]
+            
+            if "{" in content_after_let and "}" in content_after_let:
+                trailer = content_after_let.split("{")[-1].split("}")[0]
+    
+                self.trailer = trailer
+                print("Trailer: ", trailer)
+            
 
     def parse_definitions(self, filename: str) -> None:
         with open(filename, "r") as f:
@@ -56,8 +70,11 @@ class Yalex:
                 if line.startswith("let"):
                     if current_key is not None:
                         self.definitions[current_key] = current_value.strip()
-                    _, line = line.split("let", 1)
-                    current_key, current_value = line.split("=", 1)
+                    try:
+                        _, line = line.split("let", 1)
+                        current_key, current_value = line.split("=", 1)
+                    except ValueError:
+                        raise ValueError("Malformed definition")
                     current_key = current_key.strip()
                     current_value = current_value.strip()
                 else:
