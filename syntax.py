@@ -1,44 +1,45 @@
 import pydotplus
 
+from Yalex import Yalex
 from Yapar import Yapar
 
 
-def closure(I):
-    J = []
-    J.extend(I)
-    added = True
-    while added:
-        added = False
-        for item in J:
-            if "." in item[1] and item[1].index(".") != len(item[1]) - 1:
-                next_symbol = item[1][item[1].index(".") + 1]
-                if next_symbol in grammar["NT"]:
-                    for production in grammar["P"]:
-                        if production[0] == next_symbol:
-                            new_item = [production[0], production[1].copy()]
-                            new_item[1].insert(0, ".")
-                            if new_item not in J:
-                                J.append(new_item)
-                                added = True
-    return J
+def main():
 
+    yalex = Yalex("examples/slr-1.yal", debug=False)
 
-def goto(items, symbol):
-    goto_items = []
-    for item in items:
-        if "." in item[1]:
-            dot_pos = item[1].index(".")
-            if dot_pos < len(item[1]) - 1:
-                next_symbol = item[1][dot_pos + 1]
-                if next_symbol == symbol:
-                    new_item = [
-                        item[0],
-                        item[1][:dot_pos]
-                        + [item[1][dot_pos + 1], "."]
-                        + item[1][dot_pos + 2 :],
-                    ]
-                    goto_items.append(new_item)
-    return closure(goto_items)
+    lex_tokens = []
+
+    for key, value in yalex.tokens:
+        if key == "":
+            continue
+        lex_tokens.append(key)
+
+    print("Tokens in lexer:")
+    print(lex_tokens, "\n")
+
+    yapar = Yapar("slr1.yalp")
+    yapar.parse()
+    grammar = yapar.get_grammar()
+
+    for terminal in grammar["T"]:
+        if terminal not in lex_tokens:
+            raise Exception(f"Terminal {terminal} not in lexer tokens")
+
+    print("Grammar:")
+    print("Terminals:")
+    print(grammar["T"], "\n")
+    print("Non-terminals:")
+    print(grammar["NT"], "\n")
+
+    print("Productions:")
+    for production in grammar["P"]:
+        print(f"  {production[0]} -> {' '.join(production[1])}")
+    print("\n")
+
+    print("LR0 saved in lr0_automata.pdf")
+
+    lr0_automata = construct_lr0_automata(grammar)
 
 
 def visualize_lr0_automaton(states, transitions, grammar, kernel_color="lightblue"):
@@ -113,7 +114,44 @@ def visualize_lr0_automaton(states, transitions, grammar, kernel_color="lightblu
     return dot
 
 
-def construct_lr0_automata(grammar):
+def construct_lr0_automata(grammar: dict):
+
+    # items, son todos los simbolos de la gramatica (terminales y no terminales)
+    def closure(items):
+        J = []
+        J.extend(items)
+        added = True
+        while added:
+            added = False
+            for item in J:
+                if "." in item[1] and item[1].index(".") != len(item[1]) - 1:
+                    next_symbol = item[1][item[1].index(".") + 1]
+                    if next_symbol in grammar["NT"]:
+                        for production in grammar["P"]:
+                            if production[0] == next_symbol:
+                                new_item = [production[0], production[1].copy()]
+                                new_item[1].insert(0, ".")
+                                if new_item not in J:
+                                    J.append(new_item)
+                                    added = True
+        return J
+
+    def goto(items, symbol):
+        goto_items = []
+        for item in items:
+            if "." in item[1]:
+                dot_pos = item[1].index(".")
+                if dot_pos < len(item[1]) - 1:
+                    next_symbol = item[1][dot_pos + 1]
+                    if next_symbol == symbol:
+                        new_item = [
+                            item[0],
+                            item[1][:dot_pos]
+                            + [item[1][dot_pos + 1], "."]
+                            + item[1][dot_pos + 2 :],
+                        ]
+                        goto_items.append(new_item)
+        return closure(goto_items)
 
     states = []
     transitions = {}
@@ -123,14 +161,6 @@ def construct_lr0_automata(grammar):
     augmented_production = [S + "'", [S]]
     grammar["P"].insert(0, augmented_production)
     grammar["NT"].insert(0, S + "'")
-
-    print("Terminals:")
-    print(grammar["T"])
-    print("Non-terminals:")
-    print(grammar["NT"])
-    print("Productions:")
-    for production in grammar["P"]:
-        print(f"  {production[0]} -> {' '.join(production[1])}")
 
     # El estado inicial es closure({S' -> .S})
     first = [grammar["P"][0][0], grammar["P"][0][1].copy()]
@@ -153,10 +183,6 @@ def construct_lr0_automata(grammar):
         for item in kernel_items:
             if item[0] == grammar["P"][0][0] and "." == item[1][-1]:
                 accept_item = item
-
-        for item in current_state:
-            if item not in kernel_items:
-                print(f"  {item[0]} -> {''.join(item[1])}")
 
         current_state_index = states.index(current_state)
         if accept_item is not None:
@@ -181,13 +207,5 @@ def construct_lr0_automata(grammar):
     visual.write_pdf("lr0_automata.pdf")
 
 
-yapar = Yapar("slr1.yalp")
-yapar.parse()
-grammar = yapar.get_grammar()
-
-lr0_automata = construct_lr0_automata(grammar)
-
-# with open("lr0_automata.dot", "w") as file:
-#     file.write(lr0_automata.to_string())
-
-# lr0_automata.write_pdf("lr0_automata.pdf")
+if __name__ == "__main__":
+    main()

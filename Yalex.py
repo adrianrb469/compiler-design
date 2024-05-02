@@ -1,42 +1,54 @@
 import re
-from Regex import Regex
+
 from directConstruction import DirectDFA
+from Regex import Regex
 from syntax_tree import SyntaxTree
 from utils import print_definitions, print_rules
+
 
 class Yalex:
     """
     Parses a Yalex file, returning the final regex and the rules.
     """
-    def __init__(self, filename: str) -> ():
+
+    def __init__(self, filename: str, debug=False):
         self.definitions = {}
         self.rules = {}
+        self.debug = debug
         self.parse_definitions(filename)
         self.parse_rules(filename)
         self.parse_header(filename)
         self.parse_trailer(filename)
-        
 
-        print_definitions(self.definitions)
-        
+        if self.debug:
+
+            print_definitions(self.definitions)
+
         def replace_keywords(rule):
             if rule in self.definitions:
                 return self.definitions[rule]
             return rule
 
-        self.final_regex = "(" + "|".join(
-            replace_keywords(rule[0]) + '※' for rule in self.rules.values()
-        ) + ")"
-        
+        self.final_regex = (
+            "("
+            + "|".join(replace_keywords(rule[0]) + "※" for rule in self.rules.values())
+            + ")"
+        )
+
         self.tokens = [(v[0], v[1]) for k, v in self.rules.items()]
-    
+
     def parse_header(self, filename: str) -> None:
         with open(filename, "r") as f:
             content = f.read()
-            content_before_let = content.split("let")[0]  # split on "let" and take the first part
+            content_before_let = content.split("let")[
+                0
+            ]  # split on "let" and take the first part
             if "{" in content_before_let and "}" in content_before_let:
-                header = content_before_let.split("{")[1].split("}")[0]  # split on "{" and "}" as before
-                print("Header: ", header)
+                header = content_before_let.split("{")[1].split("}")[
+                    0
+                ]  # split on "{" and "}" as before
+                if self.debug:
+                    print("Header: ", header)
                 self.header = header
             else:
                 self.header = ""
@@ -47,13 +59,13 @@ class Yalex:
             content = f.read()
             # get content of last "{" and "}" of the file
             content_after_let = content.split("let")[-1]
-            
+
             if "{" in content_after_let and "}" in content_after_let:
                 trailer = content_after_let.split("{")[-1].split("}")[0]
-    
+
                 self.trailer = trailer
-                print("Trailer: ", trailer)
-            
+                if self.debug:
+                    print("Trailer: ", trailer)
 
     def parse_definitions(self, filename: str) -> None:
         with open(filename, "r") as f:
@@ -115,7 +127,7 @@ class Yalex:
             for token in tokens:
                 token = token.strip()
                 if "{" in token and "}" in token:
-                    
+
                     token_parts = token.split("{")
                     token_regex = token_parts[0].strip().replace("\\", "")
                     token_action = token_parts[1].split("}")[0].strip()
@@ -125,4 +137,3 @@ class Yalex:
                     token_info.append((token_regex, None))
 
             self.rules = dict(enumerate(token_info))
-

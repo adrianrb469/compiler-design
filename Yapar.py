@@ -20,8 +20,6 @@ class Yapar:
             token_pattern = r"%token\s+(.*?)(?=\n%token|\n%%|\nIGNORE|\n|$)"
             tokens = re.findall(token_pattern, token_section)
 
-            print("Tokens:", tokens)
-
             ignore_pattern = r"IGNORE\s+(\w+)"
             ignored_tokens = re.findall(ignore_pattern, token_section)
 
