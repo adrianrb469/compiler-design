@@ -1,10 +1,11 @@
-
 from graphviz import Digraph
-from render import render_tree
+
+from automata.render import render_tree
+
 
 class Node:
     pos_counter = 0
-   
+
     def __init__(self, value, left=None, right=None, pos=None, nullable=None):
         self.value = value
         self.left = left
@@ -13,34 +14,35 @@ class Node:
         self.nullable = nullable
         self.firstPos = set()
         self.lastPos = set()
-        
-class SyntaxTree:    
+
+
+class SyntaxTree:
     def __init__(self, postfix):
         self.followPosTable = dict()
         self.posTable = dict()
         self.root = self.create_ast(postfix)
         self.operands = self.regexAlphabet(postfix)
-    
-    def regexAlphabet(self,postfix):
+
+    def regexAlphabet(self, postfix):
         alphabet = set()
-        reserved = ['|','*','.','ϵ','ε']
-        
-        i=0
-        while i<len(postfix):
+        reserved = ["|", "*", ".", "ϵ", "ε"]
+
+        i = 0
+        while i < len(postfix):
             char = postfix[i]
-            if char[0] == '\\':
-                if len(char)>1:
+            if char[0] == "\\":
+                if len(char) > 1:
                     alphabet.add(char[1])
                 else:
                     alphabet.add(char[0])
             elif char not in reserved:
                 alphabet.add(char)
-            i+=1
+            i += 1
         return alphabet
-    
+
     def create_ast(self, postfix):
         stack = []
-        operators = ['|', '*', '.']
+        operators = ["|", "*", "."]
 
         Node.pos_counter = 0
         self.followPosTable = dict()
@@ -60,21 +62,21 @@ class SyntaxTree:
 
     def handle_operator(self, char, new_node, stack):
         new_node.right = stack.pop()
-        if char != '*':
+        if char != "*":
             new_node.left = stack.pop()
 
-        if char == '|':
+        if char == "|":
             self.handle_or_operator(new_node)
-        elif char == '.':
+        elif char == ".":
             self.handle_dot_operator(new_node)
         else:  # char == '*'
             self.handle_star_operator(new_node)
 
     def handle_operand(self, char, new_node):
-        if char == 'ε':
+        if char == "ε":
             new_node.nullable = True
         else:
-            if char[0] == '\\' and len(char) > 1:
+            if char[0] == "\\" and len(char) > 1:
                 char = char[1]
                 new_node.value = char
 
@@ -118,7 +120,5 @@ class SyntaxTree:
         for i in new_node.lastPos:
             self.followPosTable[i].update(new_node.firstPos)
 
-
     def render(self, graph=None):
         render_tree(self.root)
-            

@@ -1,8 +1,8 @@
 import re
 
-from directConstruction import DirectDFA
-from Regex import Regex
-from syntax_tree import SyntaxTree
+from automata.directDfa import DirectDFA
+from automata.Regex import Regex
+from automata.syntax_tree import SyntaxTree
 from utils import print_definitions, print_rules
 
 
@@ -31,11 +31,14 @@ class Yalex:
 
         self.final_regex = (
             "("
-            + "|".join(replace_keywords(rule[0]) + "※" for rule in self.rules.values())
+            + "|".join(
+                replace_keywords(rule[0]) + "※"
+                for rule in self.rules.values()
+                if rule[0] != ""
+            )
             + ")"
         )
-
-        self.tokens = [(v[0], v[1]) for k, v in self.rules.items()]
+        self.tokens = [(v[0], v[1]) for k, v in self.rules.items() if v[0] != ""]
 
     def parse_header(self, filename: str) -> None:
         with open(filename, "r") as f:

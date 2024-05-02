@@ -1,20 +1,8 @@
 # Scanner generated automatically by Yalex. Do not modify this file.
 import pickle
-PLUS = "PLUS"
-TIMES = "TIMES"
-ID = "ID" 
-LPAREN = "LPAREN"
-RPAREN = "RPAREN"
-NULL = "NULL"
-TRUE = "TRUE"
-FALSE = "FALSE"
-NUMBER = "NUMBER"
-LT = "LT"
-GT = "GT"
-EQ = "EQUALS"
-SEMICOLON = "SEMICOLON"
-MINUS = "MINUS"
-DDOTS = "DDOTS"
+
+print("header")
+
 def execute_action(action, token):
     local_namespace = {}
 
@@ -60,9 +48,8 @@ def recognize_tokens(dfa, file_path):
                 # Perform action associated with the last valid state
                 action_result = execute_action(last_valid_state.action, last_valid_token)
                 if action_result is not None:
-                    print(action_result)
+                    print("Action:", action_result, " from token:", last_valid_token)
                 current_state = dfa.initial_state
-                print("Token:", last_valid_token)
                 current_token = ""
                 last_valid_token = ""
                 last_valid_state = None
@@ -79,12 +66,14 @@ def recognize_tokens(dfa, file_path):
     if last_valid_state:
         action_result = execute_action(last_valid_state.action, last_valid_token)
         if action_result is not None:
-            print(action_result)
+            print("Action:", action_result, " from token:", last_valid_token )
         
 
 with open("dfa.pkl", "rb") as file:
     dfa = pickle.load(file)
 
-recognize_tokens(dfa, "python.txt")
+recognize_tokens(dfa, "test.txt")
     
-print('hello')
+
+print("trailer")
+

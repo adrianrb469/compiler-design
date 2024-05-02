@@ -2,6 +2,10 @@ import re
 
 
 class Yapar:
+    """
+    Parses a Yapar file, returning the grammar.
+    """
+
     def __init__(self, filename: str) -> None:
         self.filename = filename
         self.tokens = []

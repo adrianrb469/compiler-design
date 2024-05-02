@@ -1,22 +1,25 @@
-from Regex import Regex
-from Yalex import Yalex
-from syntax_tree import SyntaxTree
-from directDfa import DirectDFA
 from pickle import dump
 
-yalex = Yalex("examples/python.yal")
+from automata.directDfa import DirectDFA
+from automata.Regex import Regex
+from automata.syntax_tree import SyntaxTree
+from Yalex import Yalex
+
+yalex = Yalex("examples/slr-1.yal")
 print("Tokens: \n", yalex.tokens, "\n")
 print("Final Regex: \n", yalex.final_regex)
 
 postfix = Regex(yalex.final_regex).shunting_yard()
 tree = SyntaxTree(postfix)
-# tree.render()
+tree.render()
 
 
 dfa = DirectDFA()
-dfa.generate_direct_dfa(tree,tree.root)
+dfa.generate_direct_dfa(tree, tree.root)
 dfa.set_actions(yalex.tokens)
-# dfa.render()
+dfa.render()
+
+input_file = "test.txt"
 
 content = f"""# Scanner generated automatically by Yalex. Do not modify this file.
 import pickle
@@ -66,9 +69,8 @@ def recognize_tokens(dfa, file_path):
                 # Perform action associated with the last valid state
                 action_result = execute_action(last_valid_state.action, last_valid_token)
                 if action_result is not None:
-                    print(action_result)
+                    print("Action:", action_result, " from token:", last_valid_token)
                 current_state = dfa.initial_state
-                print("Token:", last_valid_token)
                 current_token = ""
                 last_valid_token = ""
                 last_valid_state = None
@@ -85,13 +87,13 @@ def recognize_tokens(dfa, file_path):
     if last_valid_state:
         action_result = execute_action(last_valid_state.action, last_valid_token)
         if action_result is not None:
-            print(action_result)
+            print("Action:", action_result, " from token:", last_valid_token )
         
 
 with open("dfa.pkl", "rb") as file:
     dfa = pickle.load(file)
 
-recognize_tokens(dfa, "python.txt")
+recognize_tokens(dfa, "{input_file}")
     
 {yalex.trailer}
 """
@@ -103,6 +105,5 @@ with open("dfa.pkl", "wb") as file:
 # Write the content to a file
 with open("Scan.py", "w") as file:
     file.write(content)
-    
+
 print("\nScan.py generated in current directory.")
-    

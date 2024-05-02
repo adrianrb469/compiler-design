@@ -7,21 +7,20 @@ let delim = [' ''\t''\n']
 let ws = delim+
 let letter = ['A'-'Z''a'-'z']
 let digit = ['0'-'9']
-let id = (letter)(letter|digit)*
+let id = (letter)(letter|digit)*"abc"
 let plus = '+'
 let times = '*'
 let lparen = '('  
 let rparen = ')'
-let NUMBER = 'a'
 
 rule tokens = 
-  | ws      { WS }  
-  | ID     { ID }   
-  | PLUS      
-  | TIMES       
-  | LPAREN
-  | RPAREN     
-  | NUMBER
+  | ws      { print("ws") } 
+  | id     { print("id")}
+  | digit {print("digit")}
+  | plus      { print("plus")}
+  | times       { print("times")}
+  | lparen { print("lparen")}
+  | rparen    { print("rparen")}  
 
 {
 print("trailer")

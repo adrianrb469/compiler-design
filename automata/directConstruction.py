@@ -1,6 +1,5 @@
-from syntax_tree import *
-from render import create_direct_dfa_graph
-
+from automata.render import create_direct_dfa_graph
+from automata.syntax_tree import *
 
 # class DirectDFAState:
 #     def __init__(self, state, marked=False, accepting=False, initial=False):
@@ -18,7 +17,9 @@ class DirectDFATransition:
 
 
 class DirectDFAState:
-    def __init__(self, state, marked=False, accepting=False, initial=False, accept_pos=None):
+    def __init__(
+        self, state, marked=False, accepting=False, initial=False, accept_pos=None
+    ):
         self.state = state
         self.accepting = accepting
         self.marked = marked
@@ -33,19 +34,17 @@ class DirectDFA:
         self.states, self.transitions, self.alphabet = self.directConstruction(tree)
         self.initial_state = self.states[0]
         self.tree = tree
-        
-    
 
     def step(self, current_state, input_symbol):
         for transition in self.transitions:
-            
+
             if (
                 set(transition.originState) == set(current_state.state)
                 and transition.symbol == input_symbol
             ):
                 return transition.destinationState
         return None
-    
+
     def run(self, string, minimized=False):
         # Verify if the string has chars that are not in the alphabet
         # for char in string:
@@ -72,7 +71,7 @@ class DirectDFA:
                         if state.state == transition.destinationState:
                             currentState = state
                             transitionFound = True
-                            print('\tEureka!', char, currentState.state)
+                            print("\tEureka!", char, currentState.state)
                             break
                     break
             if not transitionFound and char != "#":
@@ -80,7 +79,7 @@ class DirectDFA:
                     print(f"Direct DFA simulation: {False}")
                 else:
                     print(f"Minimized Direct DFA simulation: {False}")
-                return False  
+                return False
 
     def directConstruction(self, tree):
         # regex = "(" + regex + ")#"
@@ -131,7 +130,9 @@ class DirectDFA:
                             "Ø"
                         }  # if the node is not a digit, set the new state to empty
                 if not newState == set():  # if the new state is not empty
-                    currentStates = []  # create a new list for just the current states sets
+                    currentStates = (
+                        []
+                    )  # create a new list for just the current states sets
                     for state in Dstates:  # for every state in Dstates
                         currentStates.append(
                             state.state
@@ -151,7 +152,9 @@ class DirectDFA:
                                     break
 
                         Dstates.append(
-                            DirectDFAState(newState, False, acceptingState, accept_pos=accept_pos)
+                            DirectDFAState(
+                                newState, False, acceptingState, accept_pos=accept_pos
+                            )
                         )  # add the new state to Dstates
                     if currentState.state != {"Ø"}:  # if the current state is not empty
                         Dtransitions.append(
@@ -162,27 +165,31 @@ class DirectDFA:
                 currentState = Dstates[statesCounter]
 
         return Dstates, Dtransitions, language
-    
+
     def set_actions(self, rule_tokens):
         # Extract the acceptance positions from the lexer AFD states
-        acceptance_positions = [state.accept_pos for state in  self.states if state.accept_pos is not None]
+        acceptance_positions = [
+            state.accept_pos for state in self.states if state.accept_pos is not None
+        ]
 
         # Sort the acceptance positions in ascending order
         # the reason we sort them is because, the acceptance positions are the positions of '#' in the state
         # and the '#' is the last symbol in the regex
         # which means the acceptance positions are the last positions in the regex
         sorted_acceptance_positions = sorted(list(set(acceptance_positions)))
-        
+
         # Associate the rule actions with the acceptance positions
         for i, state in enumerate(self.states):
             if state.accept_pos is not None:
-                token,action = rule_tokens[sorted_acceptance_positions.index(state.accept_pos)]
+                token, action = rule_tokens[
+                    sorted_acceptance_positions.index(state.accept_pos)
+                ]
                 state.action = action
                 state.label = token
-  
+
     def render(self, minimized=False):
         create_direct_dfa_graph(self.states, self.transitions, minimized)
-        
+
     def minimize(self):
         # Step 1: Initialize partitions
         accepting_states = set()
