@@ -41,6 +41,78 @@ def goto(items, symbol):
     return closure(goto_items)
 
 
+def visualize_lr0_automaton(states, transitions, grammar, kernel_color="lightblue"):
+    dot = pydotplus.Dot(
+        graph_type="digraph", rankdir="TB", fontname="SF Mono", fontsize="10"
+    )
+
+    for i, state in enumerate(states):
+        state_label = f"<\n<TABLE BORDER='0' CELLBORDER='1' CELLSPACING='0'>\n"
+        state_label += f"<TR><TD COLSPAN='2'><B>I{i}</B></TD></TR>\n"
+
+        kernel_items = [item for item in state if item[1][0] != "." or item == state[0]]
+        is_accepting = False
+        for item in kernel_items:
+            if item[0] == grammar["P"][0][0] and "." == item[1][-1]:
+                is_accepting = True
+                break
+
+        state_label += "<TR><TD COLSPAN='2'><B>Kernel items:</B></TD></TR>\n"
+        for item in kernel_items:
+            state_label += f"<TR><TD>{item[0]}</TD><TD>{' '.join(item[1])}</TD></TR>\n"
+
+        state_label += "<TR><TD COLSPAN='2'><B>Closure items:</B></TD></TR>\n"
+        for item in state:
+            if item not in kernel_items:
+                state_label += (
+                    f"<TR><TD>{item[0]}</TD><TD>{' '.join(item[1])}</TD></TR>\n"
+                )
+
+        state_label += "</TABLE>\n>"
+
+        node = pydotplus.Node(
+            str(i),
+            label=state_label,
+            shape="plaintext",
+            fontname="CMU Serif",
+            fontsize="12",
+        )
+
+        dot.add_node(node)
+
+    for from_state, transition in transitions.items():
+        for symbol, to_state in transition.items():
+            if symbol == "$" and to_state == "Accept":
+                accept_node = pydotplus.Node(
+                    "Accept",
+                    label="Accept",
+                    shape="plaintext",
+                    fontname="CMU Serif Bold",
+                    fontsize="14",
+                )
+                dot.add_node(accept_node)
+                edge = pydotplus.Edge(
+                    str(from_state),
+                    "Accept",
+                    label="$",
+                    arrowhead="normal",
+                    fontname="CMU Serif",
+                    fontsize="14",
+                )
+            else:
+
+                edge = pydotplus.Edge(
+                    str(from_state),
+                    str(to_state),
+                    label=symbol,
+                    fontname="CMU Serif",
+                    fontsize="14",
+                )
+            dot.add_edge(edge)
+
+    return dot
+
+
 def construct_lr0_automata(grammar):
 
     states = []
@@ -105,58 +177,8 @@ def construct_lr0_automata(grammar):
                     transitions[current_state_index] = {}
                 transitions[current_state_index][symbol] = next_state_index
 
-    # Visualizacion
-    dot = pydotplus.Dot(graph_type="digraph")
-    dot.set_rankdir("TB")
-    dot.set_size('"8,5"')
-
-    kernel_color = "#ffffff"
-
-    for i, state in enumerate(states):
-        state_label = f"S{i}:\n"
-
-        kernel_items = [item for item in state if item[1][0] != "." or item == state[0]]
-
-        is_accepting = False
-        for item in kernel_items:
-            if item[0] == grammar["P"][0][0] and "." == item[1][-1]:
-                is_accepting = True
-                break
-
-        state_label += "Kernel items:\n"
-        for item in kernel_items:
-            state_label += f"  {item[0]} -> {' '.join(item[1])}\n"
-
-        state_label += "\nClosure items:\n"
-        for item in state:
-            if item not in kernel_items:
-                state_label += f"  {item[0]} -> {' '.join(item[1])}\n"
-
-        node = pydotplus.Node(
-            str(i),
-            label=state_label,
-            shape="rectangle",
-            style="filled",
-            fontsize="10",
-            fillcolor=kernel_color,
-        )
-        dot.add_node(node)
-
-    for from_state, transition in transitions.items():
-        for symbol, to_state in transition.items():
-            if symbol == "$" and to_state == "Accept":
-                accept_node = pydotplus.Node(
-                    "Accept", label="Accept", shape="plaintext"
-                )
-                dot.add_node(accept_node)
-                edge = pydotplus.Edge(
-                    str(from_state), "Accept", label="$", arrowhead="normal"
-                )
-            else:
-                edge = pydotplus.Edge(str(from_state), str(to_state), label=symbol)
-            dot.add_edge(edge)
-
-    return dot
+    visual = visualize_lr0_automaton(states, transitions, grammar)
+    visual.write_pdf("lr0_automata.pdf")
 
 
 yapar = Yapar("slr1.yalp")
@@ -165,7 +187,7 @@ grammar = yapar.get_grammar()
 
 lr0_automata = construct_lr0_automata(grammar)
 
-with open("lr0_automata.dot", "w") as file:
-    file.write(lr0_automata.to_string())
+# with open("lr0_automata.dot", "w") as file:
+#     file.write(lr0_automata.to_string())
 
-lr0_automata.write_pdf("lr0_automata.pdf")
+# lr0_automata.write_pdf("lr0_automata.pdf")
