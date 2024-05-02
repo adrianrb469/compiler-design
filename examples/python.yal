@@ -19,15 +19,18 @@ DDOTS = "DDOTS"}
 let delim = [' ''\t''\n']
 let ws = delim+
 let letter = ['A'-'Z''a'-'z']
-let digit = ['0'-'9']
+
+let digit = (0|1|2|3|4|5|6|7|8|9)
 let digits = digit+
-let id = letter(letter|digit)*
+let id = letter(letter|digit)*"test"
+let cadenas = (digit|letter|ws)*
 let number = digits('.'digits)?('E'['+''-']?digit)?
 
 rule tokens = 
     ws	      { print("\\WS")}
   | "if"      { print("IF")}
   | "null"    { return NULL }
+  | word {return}
   | "else"    { print("ELSE")}
   | "True"    { return TRUE }
   | "False"   { return FALSE }

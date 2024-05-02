@@ -1,9 +1,1 @@
-a=1;
-apple1 = 5;
-abc = cde;
-if (a>2):
-  abc=null;
-  hi=True;
-else: 
-  abc = 3.2;
-  abc = abc + 1*(5) - 32;
+aabc = > < ; 2 2.4 True False 

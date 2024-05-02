@@ -4,7 +4,7 @@ from syntax_tree import SyntaxTree
 from directDfa import DirectDFA
 from pickle import dump
 
-yalex = Yalex("test2.yal")
+yalex = Yalex("examples/python.yal")
 print("Tokens: \n", yalex.tokens, "\n")
 print("Final Regex: \n", yalex.final_regex)
 
@@ -68,6 +68,7 @@ def recognize_tokens(dfa, file_path):
                 if action_result is not None:
                     print(action_result)
                 current_state = dfa.initial_state
+                print("Token:", last_valid_token)
                 current_token = ""
                 last_valid_token = ""
                 last_valid_state = None
@@ -90,7 +91,7 @@ def recognize_tokens(dfa, file_path):
 with open("dfa.pkl", "rb") as file:
     dfa = pickle.load(file)
 
-recognize_tokens(dfa, "test2.txt")
+recognize_tokens(dfa, "python.txt")
     
 {yalex.trailer}
 """

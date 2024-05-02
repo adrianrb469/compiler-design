@@ -177,7 +177,6 @@ class Regex:
             i=0
             while i < len(char_class):
                 c = char_class[i]
-                #En caso complementoo
                 if c=='^':
                     complement = True
                 #Comillas simples

@@ -1,6 +1,20 @@
 # Scanner generated automatically by Yalex. Do not modify this file.
 import pickle
-
+PLUS = "PLUS"
+TIMES = "TIMES"
+ID = "ID" 
+LPAREN = "LPAREN"
+RPAREN = "RPAREN"
+NULL = "NULL"
+TRUE = "TRUE"
+FALSE = "FALSE"
+NUMBER = "NUMBER"
+LT = "LT"
+GT = "GT"
+EQ = "EQUALS"
+SEMICOLON = "SEMICOLON"
+MINUS = "MINUS"
+DDOTS = "DDOTS"
 def execute_action(action, token):
     local_namespace = {}
 
@@ -48,6 +62,7 @@ def recognize_tokens(dfa, file_path):
                 if action_result is not None:
                     print(action_result)
                 current_state = dfa.initial_state
+                print("Token:", last_valid_token)
                 current_token = ""
                 last_valid_token = ""
                 last_valid_state = None
@@ -70,6 +85,6 @@ def recognize_tokens(dfa, file_path):
 with open("dfa.pkl", "rb") as file:
     dfa = pickle.load(file)
 
-recognize_tokens(dfa, "test2.txt")
+recognize_tokens(dfa, "python.txt")
     
-print("hi")
+print('hello')
