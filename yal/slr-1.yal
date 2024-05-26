@@ -14,13 +14,13 @@ let lparen = '('
 let rparen = ')'
 
 rule tokens = 
-  | ws      { print("ws") } 
-  | id     { print("id")}
-  | digit {print("digit")}
-  | plus      { print("plus")}
-  | times       { print("times")}
-  | lparen { print("lparen")}
-  | rparen    { print("rparen")}  
+  | ws        { RETURN WS }
+  | id        { RETURN ID}
+  | digit     { RETURN DIGIT }
+  | plus      { RETURN PLUS }
+  | times     { RETURN TIMES}
+  | lparen    { RETURN LPAREN }
+  | rparen    { RETURN RPAREN } 
 
 {
 print("trailer")

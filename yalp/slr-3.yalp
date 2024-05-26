@@ -3,10 +3,12 @@
 /* E → T + E | T */
 /* T → number * T | number | ( E ) */
 
-%token NUMBER
+%token number
 %token PLUS
 %token TIMES
 %token LPAREN RPAREN
+
+%%
 
 expression:
     term PLUS expression

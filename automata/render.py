@@ -1,6 +1,7 @@
-from curses.ascii import isspace
 import re
 import string
+from curses.ascii import isspace
+
 import pydotplus
 
 
@@ -18,10 +19,10 @@ def add_edges(graph, node, parent_id=None):
     if node is not None:
         node_id = str(counter[0])
         counter[0] += 1
-        
+
         if isspace(node.value):
             node.value = re.sub(r"\s+", "ws", node.value)
-        
+
         graph.add_node(pydotplus.Node(node_id, label=node.value, shape="circle"))
         if parent_id is not None:
             graph.add_edge(pydotplus.Edge(parent_id, node_id))
@@ -96,7 +97,8 @@ def create_graph(root):
 #     else:
 #         pdf_file_path = "min_direct_dfa.pdf"
 #     graph.write_pdf(pdf_file_path)  # Save PDF file
-  
+
+
 def create_direct_dfa_graph(dfa, minimized=False):
     # Create a DOT format representation of the DFA
     dot = pydotplus.Dot()
@@ -112,7 +114,7 @@ def create_direct_dfa_graph(dfa, minimized=False):
             if state.initial:
                 node.set_shape("circle")
                 node.set_style("filled")
-                node.set_name('Start');
+                node.set_name("Start")
             if state.accepting:
                 node.set_shape("doublecircle")  # Final states are double circled
                 node.set_name(str(state.label))
@@ -126,13 +128,18 @@ def create_direct_dfa_graph(dfa, minimized=False):
     for state in dfa.states:
         for symbol, next_state_id in state.transitions_ids.items():
             edge_color = "red" if next_state_id > state.state_id else "blue"
-            edge = pydotplus.Edge(state_nodes[state.state_id], state_nodes[next_state_id], label=symbol, color=edge_color)
+            edge = pydotplus.Edge(
+                state_nodes[state.state_id],
+                state_nodes[next_state_id],
+                label=symbol,
+                color=edge_color,
+            )
             dot.add_edge(edge)
 
     pydotplus.find_graphviz()
     graph = dot
 
-    graph.write_pdf('dfa.pdf')
+    graph.write_pdf("dfa.pdf")
 
 
 def render_nfa(nfa):
@@ -181,12 +188,12 @@ def render_dfa(dfa, name="dfa"):
 
         if dfa_state.id not in seen_states:
             label = ""
-            
+
             if new_dfa_state.label is not None:
-                    label = new_dfa_state.label
+                label = new_dfa_state.label
             else:
-                    label = new_dfa_state.id
-            
+                label = new_dfa_state.id
+
             graph.add_node(
                 pydotplus.Node(
                     str(label),
@@ -198,14 +205,13 @@ def render_dfa(dfa, name="dfa"):
 
         for input, new_dfa_state in dfa_state.transitions.items():
             if new_dfa_state.id not in seen_states:
-               
-                
+
                 graph.add_node(
                     pydotplus.Node(
                         str(new_dfa_state.id),
-                        shape="doublecircle"
-                        if new_dfa_state.is_accepting
-                        else "circle",
+                        shape=(
+                            "doublecircle" if new_dfa_state.is_accepting else "circle"
+                        ),
                         style="filled" if new_dfa_state.is_start else "",
                     )
                 )

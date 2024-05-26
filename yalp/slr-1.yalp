@@ -1,26 +1,28 @@
-/* Configuración del parser para Gramática No.1 */
-/* Sigue la gramática SLR: */
-/* E → E + T | T */
-/* T → T ∗ F | F */
-/* F → ( E ) | id */
 
 %token ID
 %token PLUS
+%token MINUS
 %token TIMES
+%token DIV
+%token NUMBER
 %token LPAREN RPAREN
-IGNORE TEST
+%token WHITESPACE
+IGNORE WHITESPACE
 
 %%
 
 expression:
-    expression PLUS term
+   expression PLUS term
+  | expression MINUS term
   | term
 ;
 term:
-    term TIMES factor
+   term TIMES factor
+  | term DIV factor
   | factor
 ;
 factor:
-    LPAREN expression RPAREN
+   LPAREN expression RPAREN
   | ID
+  | NUMBER
 ;

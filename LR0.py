@@ -41,12 +41,21 @@ class LR0:
                 if dot_pos < len(item[1]) - 1:
                     next_symbol = item[1][dot_pos + 1]
                     if next_symbol == symbol:
-                        new_item = [
-                            item[0],
-                            item[1][:dot_pos]
-                            + [item[1][dot_pos + 1], "."]
-                            + item[1][dot_pos + 2 :],
-                        ]
+                        if dot_pos < len(item[1]) - 2 and item[1][dot_pos + 2] == "ε":
+                            # If ε is found after the symbol, move the dot two positions to the right
+                            new_item = [
+                                item[0],
+                                item[1][:dot_pos]
+                                + [item[1][dot_pos + 1], ".", "ε"]
+                                + item[1][dot_pos + 3 :],
+                            ]
+                        else:
+                            new_item = [
+                                item[0],
+                                item[1][:dot_pos]
+                                + [item[1][dot_pos + 1], "."]
+                                + item[1][dot_pos + 2 :],
+                            ]
                         goto_items.append(new_item)
         return self.closure(goto_items)
 
@@ -108,13 +117,13 @@ class LR0:
                 item for item in state if item[1][0] != "." or item == state[0]
             ]
 
-            state_label += "<TR><TD COLSPAN='2'><B>Kernel items:</B></TD></TR>\n"
+            state_label += "<TR><TD COLSPAN='2'><B>Kernel:</B></TD></TR>\n"
             for item in kernel_items:
                 state_label += (
                     f"<TR><TD>{item[0]}</TD><TD>{' '.join(item[1])}</TD></TR>\n"
                 )
 
-            state_label += "<TR><TD COLSPAN='2'><B>Closure items:</B></TD></TR>\n"
+            state_label += "<TR><TD COLSPAN='2'><B>Closure:</B></TD></TR>\n"
             for item in state:
                 if item not in kernel_items:
                     state_label += (
@@ -139,7 +148,6 @@ class LR0:
                     accept_node = pydotplus.Node(
                         "Accept",
                         label="Accept",
-                        shape="plaintext",
                         fontname="CMU Serif Bold",
                         fontsize="14",
                     )
@@ -166,7 +174,11 @@ class LR0:
 
     def parsing_table(self):
         table = {}
-        headers = ["State"] + self.grammar["T"] + self.grammar["NT"] + ["$"]
+        headers = ["State"] + self.grammar["T"] + ["$"] + self.grammar["NT"]
+
+        # Calculate first and follow sets
+        first_sets = self.calculate_first_sets()
+        follow_sets = self.calculate_follow_sets(first_sets)
 
         for i, state in enumerate(self.states):
             table[i] = {}
@@ -176,25 +188,104 @@ class LR0:
                         table[i]["$"] = "Accept"
                     else:
                         for j, production in enumerate(self.grammar["P"]):
-                            if item[0] == production[0]:
-                                table[i]["$"] = f"Reduce {j}"
+                            if (
+                                item[0] == production[0]
+                                and item[1][:-1] == production[1]
+                            ):
+                                for symbol in follow_sets[item[0]]:
+                                    table[i][symbol] = f"Reduce {j}"
                 else:
-                    for symbol in self.grammar["items"]:
-                        next_state = self.transitions[i].get(symbol)
+                    dot_pos = item[1].index(".")
+                    next_symbol = item[1][dot_pos + 1]
+                    if next_symbol in self.grammar["T"] + ["$"]:
+                        next_state = self.transitions[i].get(next_symbol)
                         if next_state is not None:
-                            if symbol in self.grammar["T"]:
-                                table[i][symbol] = f"Shift {next_state}"
-                            elif symbol in self.grammar["NT"]:
-                                table[i][symbol] = next_state
+                            table[i][next_symbol] = f"Shift {next_state}"
+                    elif next_symbol in self.grammar["NT"]:
+                        next_state = self.transitions[i].get(next_symbol)
+                        if next_state is not None:
+                            table[i][next_symbol] = next_state
 
         # Create a list of rows for the table
         rows = []
         for i in range(len(self.states)):
             row = [f"I{i}"]
-            for symbol in self.grammar["T"] + self.grammar["NT"] + ["$"]:
+            for symbol in self.grammar["T"] + ["$"]:
                 action = table[i].get(symbol, "")
                 row.append(action)
+            for symbol in self.grammar["NT"]:
+                goto = table[i].get(symbol, "")
+                row.append(goto)
             rows.append(row)
 
         # Display the table using tabulate
         print(tabulate(rows, headers, tablefmt="grid"))
+
+    def calculate_first_sets(self):
+        first_sets = {nt: set() for nt in self.grammar["NT"]}
+        while True:
+            updated = False
+            for production in self.grammar["P"]:
+                nt, rhs = production
+                for symbol in rhs:
+                    if symbol in self.grammar["T"]:
+                        if symbol not in first_sets[nt]:
+                            first_sets[nt].add(symbol)
+                            updated = True
+                        break
+                    elif symbol in self.grammar["NT"]:
+                        if (
+                            first_sets[symbol]
+                            .difference({"ε"})
+                            .issubset(first_sets[nt])
+                        ):
+                            break
+                        else:
+                            first_sets[nt].update(first_sets[symbol].difference({"ε"}))
+                            updated = True
+                            if "ε" not in first_sets[symbol]:
+                                break
+                else:
+                    if "ε" not in first_sets[nt]:
+                        first_sets[nt].add("ε")
+                        updated = True
+            if not updated:
+                break
+        return first_sets
+
+    def calculate_follow_sets(self, first_sets):
+        follow_sets = {nt: set() for nt in self.grammar["NT"]}
+        follow_sets[self.grammar["P"][0][0]].add("$")
+        while True:
+            updated = False
+            for production in self.grammar["P"]:
+                nt, rhs = production
+                for i in range(len(rhs)):
+                    if rhs[i] in self.grammar["NT"]:
+                        if i == len(rhs) - 1:
+                            if follow_sets[nt].difference(follow_sets[rhs[i]]):
+                                follow_sets[rhs[i]].update(follow_sets[nt])
+                                updated = True
+                        else:
+                            next_symbol = rhs[i + 1]
+                            if next_symbol in self.grammar["T"]:
+                                if next_symbol not in follow_sets[rhs[i]]:
+                                    follow_sets[rhs[i]].add(next_symbol)
+                                    updated = True
+                            elif next_symbol in self.grammar["NT"]:
+                                if (
+                                    first_sets[next_symbol]
+                                    .difference({"ε"})
+                                    .difference(follow_sets[rhs[i]])
+                                ):
+                                    follow_sets[rhs[i]].update(
+                                        first_sets[next_symbol].difference({"ε"})
+                                    )
+                                    updated = True
+                                if "ε" in first_sets[next_symbol]:
+                                    if follow_sets[nt].difference(follow_sets[rhs[i]]):
+                                        follow_sets[rhs[i]].update(follow_sets[nt])
+                                        updated = True
+            if not updated:
+                break
+        return follow_sets

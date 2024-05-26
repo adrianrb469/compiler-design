@@ -1,0 +1,19 @@
+
+%token a
+%token b
+
+
+%%
+
+S: b S b b
+  | A
+;
+
+A: a B
+;
+
+B: A
+  | ε
+;
+
+

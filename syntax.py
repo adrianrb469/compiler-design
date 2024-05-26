@@ -2,6 +2,9 @@ from LR0 import LR0
 from Yalex import Yalex
 from Yapar import Yapar
 
+LEXER = "yal/slr-1.yal"
+PARSER = "yalp/checking.yalp"
+
 
 def print_grammar(grammar):
 
@@ -19,12 +22,16 @@ def print_grammar(grammar):
 
 def main(skip_lex=False):
 
-    yapar = Yapar("yalp/slr-1.yalp")
+    yapar = Yapar(PARSER)
     grammar = yapar.get_grammar()
 
     if not skip_lex:
-        yalex = Yalex("examples/slr-1.yal", debug=False)
-        lex_tokens = [key for key, value in yalex.tokens if key != ""]
+        yalex = Yalex(LEXER, debug=False)
+        pre_lex_tokens = [value for key, value in yalex.tokens if key != ""]
+
+        # hack, we get the returned token separating the values by spaces, and getting the last one
+        lex_tokens = [token.split(" ")[-1] for token in pre_lex_tokens]
+
         print("Tokens in lexer:")
         print(lex_tokens, "\n")
         for terminal in grammar["T"]:
@@ -39,7 +46,7 @@ def main(skip_lex=False):
 
     print("LR0 saved in lr0_automata.pdf")
 
-    # lr0.parsing_table()
+    lr0.parsing_table()
 
 
 if __name__ == "__main__":
