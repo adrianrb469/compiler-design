@@ -1,28 +1,21 @@
-
-%token ID
-%token PLUS
-%token MINUS
-%token TIMES
-%token DIV
-%token NUMBER
-%token LPAREN RPAREN
-%token WHITESPACE
-IGNORE WHITESPACE
+%token ws
+%token id
+%token TOKON1
+%token TOKON2
+%token TOKON3 TOKON4
+IGNORE ws
 
 %%
 
 expression:
-   expression PLUS term
-  | expression MINUS term
+    expression TOKON1 term
   | term
 ;
 term:
-   term TIMES factor
-  | term DIV factor
+    term TOKON2 factor
   | factor
 ;
 factor:
-   LPAREN expression RPAREN
-  | ID
-  | NUMBER
+    TOKON3 expression TOKON4
+  | id
 ;

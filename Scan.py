@@ -2,6 +2,8 @@
 import pickle
 
 print("header")
+digit="digit"
+ws="WS"
 
 def execute_action(action, token):
     local_namespace = {}
@@ -19,10 +21,18 @@ def execute_action(action, token):
         exec(function_code, globals(), local_namespace)
         return local_namespace['result']
     except Exception as e:
+        # if its not defined, simply print the name of the token    
+        
+  
+
         print(f"Error executing the action: {e}")
         return None
 
 def recognize_tokens(dfa, file_path):
+
+    recognized_tokens = []
+
+
     # Read the file
     with open(file_path, "r") as file:
         data = file.read()
@@ -49,6 +59,11 @@ def recognize_tokens(dfa, file_path):
                 action_result = execute_action(last_valid_state.action, last_valid_token)
                 if action_result is not None:
                     print("Action:", action_result, " from token:", last_valid_token)
+                    recognized_tokens.append(action_result)
+                else:
+                    print("Warning: No valid action defined for token:", last_valid_token)
+
+                
                 current_state = dfa.initial_state
                 current_token = ""
                 last_valid_token = ""
@@ -67,7 +82,12 @@ def recognize_tokens(dfa, file_path):
         action_result = execute_action(last_valid_state.action, last_valid_token)
         if action_result is not None:
             print("Action:", action_result, " from token:", last_valid_token )
+            recognized_tokens.append(action_result)
+    
         
+    # save the tokens to a new file, comma separated
+    with open("tokens.txt", "w") as file:
+        file.write(",".join(recognized_tokens))
 
 with open("dfa.pkl", "rb") as file:
     dfa = pickle.load(file)

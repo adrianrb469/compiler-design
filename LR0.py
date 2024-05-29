@@ -1,5 +1,12 @@
+from typing import Dict, List, Tuple, Union
+
 import pydotplus
 from tabulate import tabulate
+
+Production = Tuple[str, List[str]]  # (NT, [symbols])
+Grammar = Dict[str, Union[List[str], List[Production]]]
+
+EPSILON = "ε"
 
 
 class LR0:
@@ -8,7 +15,7 @@ class LR0:
 
     """
 
-    def __init__(self, grammar: dict):
+    def __init__(self, grammar: Grammar):
         self.grammar = grammar
         self.states = []
         self.transitions = {}
@@ -104,6 +111,123 @@ class LR0:
                         self.transitions[current_state_index] = {}
                     self.transitions[current_state_index][symbol] = next_state_index
 
+    def first(self):
+        first_sets = {nt: set() for nt in self.grammar["NT"]}
+        while True:
+            updated = False
+            for production in self.grammar["P"]:
+                nt, rhs = production
+                for symbol in rhs:
+                    if symbol in self.grammar["T"]:
+                        if symbol not in first_sets[nt]:
+                            first_sets[nt].add(symbol)
+                            updated = True
+                        break
+                    elif symbol in self.grammar["NT"]:
+                        if (
+                            first_sets[symbol]
+                            .difference({"ε"})
+                            .issubset(first_sets[nt])
+                        ):
+                            break
+                        else:
+                            first_sets[nt].update(first_sets[symbol].difference({"ε"}))
+                            updated = True
+                            if "ε" not in first_sets[symbol]:
+                                break
+                else:
+                    if "ε" not in first_sets[nt]:
+                        first_sets[nt].add("ε")
+                        updated = True
+            if not updated:
+                break
+        return first_sets
+
+    def follow(self, first_sets):
+        follow_sets = {nt: set() for nt in self.grammar["NT"]}
+        follow_sets[self.grammar["P"][0][0]].add("$")
+        while True:
+            updated = False
+            for production in self.grammar["P"]:
+                nt, rhs = production
+                for i in range(len(rhs)):
+                    if rhs[i] in self.grammar["NT"]:
+                        if i == len(rhs) - 1:
+                            if follow_sets[nt].difference(follow_sets[rhs[i]]):
+                                follow_sets[rhs[i]].update(follow_sets[nt])
+                                updated = True
+                        else:
+                            next_symbol = rhs[i + 1]
+                            if next_symbol in self.grammar["T"]:
+                                if next_symbol not in follow_sets[rhs[i]]:
+                                    follow_sets[rhs[i]].add(next_symbol)
+                                    updated = True
+                            elif next_symbol in self.grammar["NT"]:
+                                if (
+                                    first_sets[next_symbol]
+                                    .difference({"ε"})
+                                    .difference(follow_sets[rhs[i]])
+                                ):
+                                    follow_sets[rhs[i]].update(
+                                        first_sets[next_symbol].difference({"ε"})
+                                    )
+                                    updated = True
+                                if "ε" in first_sets[next_symbol]:
+                                    if follow_sets[nt].difference(follow_sets[rhs[i]]):
+                                        follow_sets[rhs[i]].update(follow_sets[nt])
+                                        updated = True
+            if not updated:
+                break
+        return follow_sets
+
+    def slr1(self):
+        table = {}
+        headers = ["State"] + self.grammar["T"] + ["$"] + self.grammar["NT"]
+
+        first_sets = self.first()
+        follow_sets = self.follow(first_sets)
+
+        for i, state in enumerate(self.states):
+            table[i] = {}
+            for item in state:
+                if "." in item[1] and item[1].index(".") == len(item[1]) - 1:
+                    if item[0] == self.grammar["P"][0][0]:
+                        table[i]["$"] = "Accept"
+                    else:
+                        for j, production in enumerate(self.grammar["P"]):
+                            if (
+                                item[0] == production[0]
+                                and item[1][:-1] == production[1]
+                            ):
+                                for symbol in follow_sets[item[0]]:
+                                    table[i][symbol] = f"Reduce {j}"
+                else:
+                    dot_pos = item[1].index(".")
+                    next_symbol = item[1][dot_pos + 1]
+                    if next_symbol in self.grammar["T"] + ["$"]:
+                        next_state = self.transitions[i].get(next_symbol)
+                        if next_state is not None:
+                            table[i][next_symbol] = f"Shift {next_state}"
+                    elif next_symbol in self.grammar["NT"]:
+                        next_state = self.transitions[i].get(next_symbol)
+                        if next_state is not None:
+                            table[i][next_symbol] = next_state
+
+        # Create a list of rows for the table
+        rows = []
+        for i in range(len(self.states)):
+            row = [f"I{i}"]
+            for symbol in self.grammar["T"] + ["$"]:
+                action = table[i].get(symbol, "")
+                row.append(action)
+            for symbol in self.grammar["NT"]:
+                goto = table[i].get(symbol, "")
+                row.append(goto)
+            rows.append(row)
+
+        # Display the table using tabulate
+        print(tabulate(rows, headers, tablefmt="grid"))
+
     def visualize(self):
         dot = pydotplus.Dot(
             graph_type="digraph", rankdir="TB", fontname="SF Mono", fontsize="10"
@@ -171,121 +295,3 @@ class LR0:
                 dot.add_edge(edge)
 
         return dot
-
-    def parsing_table(self):
-        table = {}
-        headers = ["State"] + self.grammar["T"] + ["$"] + self.grammar["NT"]
-
-        # Calculate first and follow sets
-        first_sets = self.calculate_first_sets()
-        follow_sets = self.calculate_follow_sets(first_sets)
-
-        for i, state in enumerate(self.states):
-            table[i] = {}
-            for item in state:
-                if "." in item[1] and item[1].index(".") == len(item[1]) - 1:
-                    if item[0] == self.grammar["P"][0][0]:
-                        table[i]["$"] = "Accept"
-                    else:
-                        for j, production in enumerate(self.grammar["P"]):
-                            if (
-                                item[0] == production[0]
-                                and item[1][:-1] == production[1]
-                            ):
-                                for symbol in follow_sets[item[0]]:
-                                    table[i][symbol] = f"Reduce {j}"
-                else:
-                    dot_pos = item[1].index(".")
-                    next_symbol = item[1][dot_pos + 1]
-                    if next_symbol in self.grammar["T"] + ["$"]:
-                        next_state = self.transitions[i].get(next_symbol)
-                        if next_state is not None:
-                            table[i][next_symbol] = f"Shift {next_state}"
-                    elif next_symbol in self.grammar["NT"]:
-                        next_state = self.transitions[i].get(next_symbol)
-                        if next_state is not None:
-                            table[i][next_symbol] = next_state
-
-        # Create a list of rows for the table
-        rows = []
-        for i in range(len(self.states)):
-            row = [f"I{i}"]
-            for symbol in self.grammar["T"] + ["$"]:
-                action = table[i].get(symbol, "")
-                row.append(action)
-            for symbol in self.grammar["NT"]:
-                goto = table[i].get(symbol, "")
-                row.append(goto)
-            rows.append(row)
-
-        # Display the table using tabulate
-        print(tabulate(rows, headers, tablefmt="grid"))
-
-    def calculate_first_sets(self):
-        first_sets = {nt: set() for nt in self.grammar["NT"]}
-        while True:
-            updated = False
-            for production in self.grammar["P"]:
-                nt, rhs = production
-                for symbol in rhs:
-                    if symbol in self.grammar["T"]:
-                        if symbol not in first_sets[nt]:
-                            first_sets[nt].add(symbol)
-                            updated = True
-                        break
-                    elif symbol in self.grammar["NT"]:
-                        if (
-                            first_sets[symbol]
-                            .difference({"ε"})
-                            .issubset(first_sets[nt])
-                        ):
-                            break
-                        else:
-                            first_sets[nt].update(first_sets[symbol].difference({"ε"}))
-                            updated = True
-                            if "ε" not in first_sets[symbol]:
-                                break
-                else:
-                    if "ε" not in first_sets[nt]:
-                        first_sets[nt].add("ε")
-                        updated = True
-            if not updated:
-                break
-        return first_sets
-
-    def calculate_follow_sets(self, first_sets):
-        follow_sets = {nt: set() for nt in self.grammar["NT"]}
-        follow_sets[self.grammar["P"][0][0]].add("$")
-        while True:
-            updated = False
-            for production in self.grammar["P"]:
-                nt, rhs = production
-                for i in range(len(rhs)):
-                    if rhs[i] in self.grammar["NT"]:
-                        if i == len(rhs) - 1:
-                            if follow_sets[nt].difference(follow_sets[rhs[i]]):
-                                follow_sets[rhs[i]].update(follow_sets[nt])
-                                updated = True
-                        else:
-                            next_symbol = rhs[i + 1]
-                            if next_symbol in self.grammar["T"]:
-                                if next_symbol not in follow_sets[rhs[i]]:
-                                    follow_sets[rhs[i]].add(next_symbol)
-                                    updated = True
-                            elif next_symbol in self.grammar["NT"]:
-                                if (
-                                    first_sets[next_symbol]
-                                    .difference({"ε"})
-                                    .difference(follow_sets[rhs[i]])
-                                ):
-                                    follow_sets[rhs[i]].update(
-                                        first_sets[next_symbol].difference({"ε"})
-                                    )
-                                    updated = True
-                                if "ε" in first_sets[next_symbol]:
-                                    if follow_sets[nt].difference(follow_sets[rhs[i]]):
-                                        follow_sets[rhs[i]].update(follow_sets[nt])
-                                        updated = True
-            if not updated:
-                break
-        return follow_sets

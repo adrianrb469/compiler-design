@@ -5,7 +5,12 @@ from automata.Regex import Regex
 from automata.syntax_tree import SyntaxTree
 from Yalex import Yalex
 
-yalex = Yalex("examples/slr-1.yal")
+YALEX = "yal/slr-1.yal"
+INPUT = "test.txt"
+
+
+yalex = Yalex(YALEX, debug=False)
+
 print("Tokens: \n", yalex.tokens, "\n")
 print("Final Regex: \n", yalex.final_regex)
 
@@ -19,7 +24,6 @@ dfa.generate_direct_dfa(tree, tree.root)
 dfa.set_actions(yalex.tokens)
 dfa.render()
 
-input_file = "test.txt"
 
 content = f"""# Scanner generated automatically by Yalex. Do not modify this file.
 import pickle
@@ -40,10 +44,18 @@ def execute_action(action, token):
         exec(function_code, globals(), local_namespace)
         return local_namespace['result']
     except Exception as e:
+        # if its not defined, simply print the name of the token    
+        
+  
+
         print(f"Error executing the action: {{e}}")
         return None
 
 def recognize_tokens(dfa, file_path):
+
+    recognized_tokens = []
+
+
     # Read the file
     with open(file_path, "r") as file:
         data = file.read()
@@ -70,6 +82,11 @@ def recognize_tokens(dfa, file_path):
                 action_result = execute_action(last_valid_state.action, last_valid_token)
                 if action_result is not None:
                     print("Action:", action_result, " from token:", last_valid_token)
+                    recognized_tokens.append(action_result)
+                else:
+                    print("Warning: No valid action defined for token:", last_valid_token)
+
+                
                 current_state = dfa.initial_state
                 current_token = ""
                 last_valid_token = ""
@@ -88,12 +105,17 @@ def recognize_tokens(dfa, file_path):
         action_result = execute_action(last_valid_state.action, last_valid_token)
         if action_result is not None:
             print("Action:", action_result, " from token:", last_valid_token )
+            recognized_tokens.append(action_result)
+    
         
+    # save the tokens to a new file, comma separated
+    with open("tokens.txt", "w") as file:
+        file.write(",".join(recognized_tokens))
 
 with open("dfa.pkl", "rb") as file:
     dfa = pickle.load(file)
 
-recognize_tokens(dfa, "{input_file}")
+recognize_tokens(dfa, "{INPUT}")
     
 {yalex.trailer}
 """
@@ -106,4 +128,4 @@ with open("dfa.pkl", "wb") as file:
 with open("Scan.py", "w") as file:
     file.write(content)
 
-print("\nScan.py generated in current directory.")
+print("\nscan.py generated in current directory.")

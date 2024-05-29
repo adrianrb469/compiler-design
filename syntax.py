@@ -3,7 +3,7 @@ from Yalex import Yalex
 from Yapar import Yapar
 
 LEXER = "yal/slr-1.yal"
-PARSER = "yalp/checking.yalp"
+PARSER = "yalp/actionable.yalp"
 
 
 def print_grammar(grammar):
@@ -46,7 +46,7 @@ def main(skip_lex=False):
 
     print("LR0 saved in lr0_automata.pdf")
 
-    lr0.parsing_table()
+    lr0.slr1()
 
 
 if __name__ == "__main__":
