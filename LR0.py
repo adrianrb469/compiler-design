@@ -200,6 +200,24 @@ class LR0:
                                 and item[1][:-1] == production[1]
                             ):
                                 for symbol in follow_sets[item[0]]:
+
+                                    # We check if theres already a value in the table, meaning a conflict
+                                    if (
+                                        symbol in self.table[i]
+                                        and self.table[i][symbol] != f"R{j}"
+                                    ):
+                                        raise ValueError(
+                                            f"Reduce-Reduce conflict in state I{i} for symbol {symbol}"
+                                        )
+
+                                    if (
+                                        symbol in self.table[i]
+                                        and self.table[i][symbol] == f"R{j}"
+                                    ):
+                                        raise ValueError(
+                                            f"Shift-Reduce conflict in state I{i} for symbol {symbol}"
+                                        )
+
                                     self.table[i][symbol] = f"R{j}"
                 else:
                     dot_pos = item[1].index(".")
