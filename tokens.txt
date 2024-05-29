@@ -1,1 +1,1 @@
-ID,WS,digit,WS,ID,WS,TOKON3,TOKON4
+id,ws,TOKON2,ws,id,ws,TOKON1,ws,id

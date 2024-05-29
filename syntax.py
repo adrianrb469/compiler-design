@@ -3,7 +3,7 @@ from Yalex import Yalex
 from Yapar import Yapar
 
 LEXER = "yal/slr-1.yal"
-PARSER = "yalp/actionable.yalp"
+PARSER = "yalp/slr-1.yalp"
 
 
 def print_grammar(grammar):
@@ -40,13 +40,13 @@ def main(skip_lex=False):
 
     print_grammar(grammar)
 
-    lr0 = LR0(grammar)
+    # Save Grammar as pickle
+    with open("grammar.pkl", "wb") as file:
+        import pickle
 
-    lr0.visualize().write_pdf("lr0_automata.pdf")
+        pickle.dump(grammar, file)
 
-    print("LR0 saved in lr0_automata.pdf")
-
-    lr0.slr1()
+    print("Grammar saved in grammar.pkl")
 
 
 if __name__ == "__main__":

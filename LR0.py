@@ -19,6 +19,7 @@ class LR0:
         self.grammar = grammar
         self.states = []
         self.transitions = {}
+        self.table = {}
         self.build()
 
     def closure(self, items):
@@ -181,18 +182,17 @@ class LR0:
         return follow_sets
 
     def slr1(self):
-        table = {}
         headers = ["State"] + self.grammar["T"] + ["$"] + self.grammar["NT"]
 
         first_sets = self.first()
         follow_sets = self.follow(first_sets)
 
         for i, state in enumerate(self.states):
-            table[i] = {}
+            self.table[i] = {}
             for item in state:
                 if "." in item[1] and item[1].index(".") == len(item[1]) - 1:
                     if item[0] == self.grammar["P"][0][0]:
-                        table[i]["$"] = "Accept"
+                        self.table[i]["$"] = "Accept"
                     else:
                         for j, production in enumerate(self.grammar["P"]):
                             if (
@@ -200,28 +200,28 @@ class LR0:
                                 and item[1][:-1] == production[1]
                             ):
                                 for symbol in follow_sets[item[0]]:
-                                    table[i][symbol] = f"Reduce {j}"
+                                    self.table[i][symbol] = f"R{j}"
                 else:
                     dot_pos = item[1].index(".")
                     next_symbol = item[1][dot_pos + 1]
                     if next_symbol in self.grammar["T"] + ["$"]:
                         next_state = self.transitions[i].get(next_symbol)
                         if next_state is not None:
-                            table[i][next_symbol] = f"Shift {next_state}"
+                            self.table[i][next_symbol] = f"S{next_state}"
                     elif next_symbol in self.grammar["NT"]:
                         next_state = self.transitions[i].get(next_symbol)
                         if next_state is not None:
-                            table[i][next_symbol] = next_state
+                            self.table[i][next_symbol] = next_state
 
-        # Create a list of rows for the table
+        # Create a list of rows for the self.table
         rows = []
         for i in range(len(self.states)):
             row = [f"I{i}"]
             for symbol in self.grammar["T"] + ["$"]:
-                action = table[i].get(symbol, "")
+                action = self.table[i].get(symbol, "")
                 row.append(action)
             for symbol in self.grammar["NT"]:
-                goto = table[i].get(symbol, "")
+                goto = self.table[i].get(symbol, "")
                 row.append(goto)
             rows.append(row)
 
@@ -295,3 +295,36 @@ class LR0:
                 dot.add_edge(edge)
 
         return dot
+
+    def parse(self, tokens: List[str], ignore: List[str]) -> bool:
+        stack = [0]
+        tokens.append("$")
+        token_index = 0
+
+        while True:
+
+            top = stack[-1]
+            symbol = tokens[token_index]
+
+            if symbol in ignore:
+                token_index += 1
+                continue
+
+            action = self.table[top].get(symbol)
+
+            if action is None:
+                return False  # Input is not accepted
+
+            if action == "Accept":
+                return True  # Input is successfully parsed
+
+            if action.startswith("S"):
+                state = action[1:]
+                stack.extend([symbol, int(state)])
+                token_index += 1
+            elif action.startswith("R"):
+                rule = action[1:]
+                nt, rhs = self.grammar["P"][int(rule)]
+                stack = stack[: -2 * len(rhs)]  # Pop 2*len(β) symbols off the stack
+                top = stack[-1]
+                stack.extend([nt, self.table[top][nt]])

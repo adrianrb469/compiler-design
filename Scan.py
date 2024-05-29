@@ -3,7 +3,7 @@ import pickle
 
 print("header")
 digit="digit"
-ws="WS"
+ws="ws"
 
 def execute_action(action, token):
     local_namespace = {}

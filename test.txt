@@ -1,1 +1,1 @@
-abasdasabc 2 a ()
+id * id + id

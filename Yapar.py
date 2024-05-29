@@ -13,6 +13,7 @@ class Yapar:
         self.non_terminals = []
         self.productions = []
         self.items = []
+        self.ignore = []
         self.parse()
 
     def parse(self) -> None:
@@ -27,6 +28,9 @@ class Yapar:
 
             ignore_pattern = r"IGNORE\s+(\w+)"
             ignored_tokens = re.findall(ignore_pattern, token_section)
+
+            print("Ignored tokens:", ignored_tokens)
+            self.ignore = ignored_tokens
 
             self.tokens = [token for token in tokens if token not in ignored_tokens]
 
@@ -62,4 +66,5 @@ class Yapar:
             "NT": self.non_terminals,
             "P": self.productions,
             "items": self.items,  # items = NT + T, in other words, all symbols
+            "ignore": self.ignore,
         }
