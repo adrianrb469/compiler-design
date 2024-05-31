@@ -1,4 +1,8 @@
 /result/*
 __pycache__
 todo.txt
-yalp/actionable.yalp
+yalp/*
+yal/*
+examples/
+donis/*
+donis

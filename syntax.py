@@ -3,12 +3,14 @@ from Yalex import Yalex
 from Yapar import Yapar
 
 LEXER = "yal/slr-1.yal"
-PARSER = "yalp/slr-1.yalp"
+PARSER = "donis/slr-1.yalp"
 
 
 def print_grammar(grammar):
 
     print("Grammar:")
+    print("Ignores:")
+    print(grammar["ignore"], "\n")
     print("Terminals:")
     print(grammar["T"], "\n")
     print("Non-terminals:")

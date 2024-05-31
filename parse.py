@@ -31,7 +31,7 @@ if __name__ == "__main__":
         print("No tokens found")
         exit(1)
 
-    print("Tokens to parse:", tokens)
+    print("Parsing tokens:", tokens)
 
     if lr0.parse(tokens, grammar["ignore"]):
         print("Accepted")

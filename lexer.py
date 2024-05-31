@@ -5,7 +5,7 @@ from automata.Regex import Regex
 from automata.syntax_tree import SyntaxTree
 from Yalex import Yalex
 
-YALEX = "yal/slr-1.yal"
+YALEX = "donis/slr-1.yal"
 INPUT = "test.txt"
 
 
@@ -60,54 +60,41 @@ def recognize_tokens(dfa, file_path):
     with open(file_path, "r") as file:
         data = file.read()
         
-    i = 0
-    length_data = len(data)
-    current_state = dfa.initial_state
-    current_token = ""
-    last_valid_token = ""
-    last_valid_state = None
-    
-    while i < length_data:
-        char = data[i]
-        if char in current_state.transitions:
-            current_state = current_state.transitions[char]
-            current_token += char
-            i += 1
-            if current_state.accepting:
-                last_valid_token = current_token
-                last_valid_state = current_state
-        else:
-            if last_valid_token:
-                # Perform action associated with the last valid state
-                action_result = execute_action(last_valid_state.action, last_valid_token)
-                if action_result is not None:
-                    print("Action:", action_result, " from token:", last_valid_token)
-                    recognized_tokens.append(action_result)
-                else:
-                    print("Warning: No valid action defined for token:", last_valid_token)
+    start = 0
+    while start < len(data):
+        current_state = dfa.initial_state
+        current_token = ""
+        last_accept_position = start
+        last_accept_state = None
+        i = start
 
-                
-                current_state = dfa.initial_state
-                current_token = ""
-                last_valid_token = ""
-                last_valid_state = None
-            else:
-                # No valid transition found, report an error
-                print("Lexical error:", char, "at position", i)
-                # Move to the next character
+        while i < len(data):
+            char = data[i]
+            if char in current_state.transitions:
+                current_state = current_state.transitions[char]
+                current_token += char
+                if current_state.accepting:
+                    last_accept_position = i + 1
+                    last_accept_state = current_state
                 i += 1
-                current_state = dfa.initial_state
-                current_token = ""
-                last_valid_token = ""
-                last_valid_state = None
-    
-    if last_valid_state:
-        action_result = execute_action(last_valid_state.action, last_valid_token)
-        if action_result is not None:
-            print("Action:", action_result, " from token:", last_valid_token )
-            recognized_tokens.append(action_result)
-    
-        
+            else:
+                break
+
+        if last_accept_state:
+            # Perform action associated with the last accept state
+            recognized_token = data[start:last_accept_position]
+            action_result = execute_action(last_accept_state.action, recognized_token)
+            if action_result is not None:
+                print("Action:", action_result, "from token:", recognized_token)
+                recognized_tokens.append(action_result)
+            else:
+                print("Warning: No valid action defined for token:", recognized_token)
+            start = last_accept_position
+        else:
+            # No valid transition found, report an error
+            print("Lexical error:", data[start], "at position", start)
+            start += 1
+
     # save the tokens to a new file, comma separated
     with open("tokens.txt", "w") as file:
         file.write(",".join(recognized_tokens))

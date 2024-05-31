@@ -6,7 +6,7 @@
 %token G
 %token H
 %token F
-%token epsilon
+
 
 %%
 

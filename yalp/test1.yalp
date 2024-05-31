@@ -1,5 +1,4 @@
-
-%token ID
+%token id
 %token PLUS
 %token MINUS
 %token TIMES

@@ -29,7 +29,6 @@ class Yapar:
             ignore_pattern = r"IGNORE\s+(\w+)"
             ignored_tokens = re.findall(ignore_pattern, token_section)
 
-            print("Ignored tokens:", ignored_tokens)
             self.ignore = ignored_tokens
 
             self.tokens = [token for token in tokens if token not in ignored_tokens]

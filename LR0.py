@@ -6,8 +6,6 @@ from tabulate import tabulate
 Production = Tuple[str, List[str]]  # (NT, [symbols])
 Grammar = Dict[str, Union[List[str], List[Production]]]
 
-EPSILON = "ε"
-
 
 class LR0:
     """
@@ -49,21 +47,10 @@ class LR0:
                 if dot_pos < len(item[1]) - 1:
                     next_symbol = item[1][dot_pos + 1]
                     if next_symbol == symbol:
-                        if dot_pos < len(item[1]) - 2 and item[1][dot_pos + 2] == "ε":
-                            # If ε is found after the symbol, move the dot two positions to the right
-                            new_item = [
-                                item[0],
-                                item[1][:dot_pos]
-                                + [item[1][dot_pos + 1], ".", "ε"]
-                                + item[1][dot_pos + 3 :],
-                            ]
-                        else:
-                            new_item = [
-                                item[0],
-                                item[1][:dot_pos]
-                                + [item[1][dot_pos + 1], "."]
-                                + item[1][dot_pos + 2 :],
-                            ]
+                        new_item = [
+                            item[0],
+                            item[1][:dot_pos] + [symbol, "."] + item[1][dot_pos + 2 :],
+                        ]
                         goto_items.append(new_item)
         return self.closure(goto_items)
 
@@ -187,6 +174,17 @@ class LR0:
         first_sets = self.first()
         follow_sets = self.follow(first_sets)
 
+        print("First sets:")
+        for nt, first_set in first_sets.items():
+            print(f"{nt}: {first_set}")
+        print("\n")
+
+        print("Follow sets:")
+        for nt, follow_set in follow_sets.items():
+            print(f"{nt}: {follow_set}")
+        print("\n")
+
+        errors = False
         for i, state in enumerate(self.states):
             self.table[i] = {}
             for item in state:
@@ -200,24 +198,22 @@ class LR0:
                                 and item[1][:-1] == production[1]
                             ):
                                 for symbol in follow_sets[item[0]]:
-
-                                    # We check if theres already a value in the table, meaning a conflict
-                                    if (
-                                        symbol in self.table[i]
-                                        and self.table[i][symbol] != f"R{j}"
-                                    ):
-                                        raise ValueError(
-                                            f"Reduce-Reduce conflict in state I{i} for symbol {symbol}"
-                                        )
-
-                                    if (
-                                        symbol in self.table[i]
-                                        and self.table[i][symbol] == f"R{j}"
-                                    ):
-                                        raise ValueError(
-                                            f"Shift-Reduce conflict in state I{i} for symbol {symbol}"
-                                        )
-
+                                    if symbol in self.table[i]:
+                                        if isinstance(
+                                            self.table[i][symbol], str
+                                        ) and self.table[i][symbol].startswith("S"):
+                                            print(
+                                                f"Shift-Reduce conflict in state I{i} for symbol {symbol}"
+                                            )
+                                            errors = True
+                                        elif isinstance(
+                                            self.table[i][symbol], str
+                                        ) and self.table[i][symbol].startswith("R"):
+                                            if self.table[i][symbol] != f"R{j}":
+                                                print(
+                                                    f"Reduce-Reduce conflict in state I{i} for symbol {symbol}"
+                                                )
+                                                errors = True
                                     self.table[i][symbol] = f"R{j}"
                 else:
                     dot_pos = item[1].index(".")
@@ -225,11 +221,21 @@ class LR0:
                     if next_symbol in self.grammar["T"] + ["$"]:
                         next_state = self.transitions[i].get(next_symbol)
                         if next_state is not None:
+                            if next_symbol in self.table[i]:
+                                if self.table[i][next_symbol] != f"S{next_state}":
+                                    print(
+                                        f"Shift-Shift conflict in state I{i} for symbol {next_symbol}"
+                                    )
+                                    errors = True
                             self.table[i][next_symbol] = f"S{next_state}"
                     elif next_symbol in self.grammar["NT"]:
                         next_state = self.transitions[i].get(next_symbol)
                         if next_state is not None:
                             self.table[i][next_symbol] = next_state
+
+        # if errors:
+        #     print("Errors found in the table, please fix them before parsing")
+        #     return
 
         # Create a list of rows for the self.table
         rows = []
@@ -325,12 +331,17 @@ class LR0:
             symbol = tokens[token_index]
 
             if symbol in ignore:
+                print("Ignoring token:", symbol)
                 token_index += 1
                 continue
 
             action = self.table[top].get(symbol)
 
             if action is None:
+                print(f"Error: No action defined for state {top} and symbol {symbol}")
+                print(f"Stack: {stack}")
+                print(f"Token that caused the error: {symbol}")
+
                 return False  # Input is not accepted
 
             if action == "Accept":
